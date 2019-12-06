@@ -125,10 +125,11 @@ public class HelloSceneformActivity extends AppCompatActivity {
         Frame frame = arFragment.getArSceneView().getArFrame();
         PointCloud pointCloud=frame.acquirePointCloud();
         FloatBuffer points = pointCloud.getPoints();
+
+        //Debugging output PointCloud
         String x = String.valueOf(points.get());
         String y = String.valueOf(points.get());
         String z = String.valueOf(points.get());
-        
         System.out.println(x + y + z);
 
 
