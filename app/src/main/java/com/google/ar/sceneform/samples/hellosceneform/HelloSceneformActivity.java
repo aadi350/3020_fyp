@@ -128,6 +128,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
         String x = String.valueOf(points.get());
         String y = String.valueOf(points.get());
         String z = String.valueOf(points.get());
+        
         System.out.println(x + y + z);
 
 
