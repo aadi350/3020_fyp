@@ -44,6 +44,7 @@ import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
+import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.samples.renderers.PointCloudRenderer;
 import com.google.ar.sceneform.ux.ArFragment;
@@ -61,6 +62,8 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private ArFragment arFragment;
   private ArSceneView arSceneView;
   private ModelRenderable andyRenderable;
+  private Vector3 anchorPosition;
+  private boolean placed = false;
 
     @Override
   @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -86,20 +89,25 @@ public class HelloSceneformActivity extends AppCompatActivity {
 
       arFragment.setOnTapArPlaneListener(
               (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                  if (andyRenderable == null) {
+                  if (andyRenderable == null || placed) {
                       return;
                   }
                   andyRenderable.setShadowCaster(false);
                   // Create the Anchor at hit result
                   Anchor anchor = hitResult.createAnchor();
+                  placed = true;
                   Log.i("TAP","Tap registered");
                   AnchorNode anchorNode = new AnchorNode(anchor);
+
                   anchorNode.setParent(arFragment.getArSceneView().getScene());
 
                   // Create the transformable andy and add it to the anchor.
                   TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
                   andy.getScaleController().setEnabled(false);
                   andy.setParent(anchorNode);
+                  //get position of placed object
+                  anchorPosition = anchorNode.getLocalPosition();
+                    
                   andy.setRenderable(andyRenderable);
                   andy.select();
                   arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
@@ -125,6 +133,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
         Frame frame = arFragment.getArSceneView().getArFrame();
         PointCloud pointCloud=frame.acquirePointCloud();
         FloatBuffer points = pointCloud.getPoints();
+        //sizeCheck SizeCheck = new sizeCheck(anchorPosition, pointCloud);
 
         //Debugging output PointCloud
         String x = String.valueOf(points.get());
