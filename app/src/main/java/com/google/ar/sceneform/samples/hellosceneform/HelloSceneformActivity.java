@@ -98,6 +98,16 @@ public class HelloSceneformActivity extends AppCompatActivity {
                   placed = true;
                   Log.i("TAP","Tap registered");
                   AnchorNode anchorNode = new AnchorNode(anchor);
+                  Vector3 position = anchorNode.getLocalPosition();
+
+                  /*-------------------------------------------------------------------------------*/
+                  //Debugging position of placed object
+                  String[] pos = new String[3];
+                  pos[0] = String.valueOf(position.x);
+                  pos[1] = String.valueOf(position.y);
+                  pos[2] = String.valueOf(position.z);
+                  System.out.println("Object Position:" + pos[0] + pos[1] + pos[2]);
+                  /*-------------------------------------------------------------------------------*/
 
                   anchorNode.setParent(arFragment.getArSceneView().getScene());
 
@@ -135,11 +145,13 @@ public class HelloSceneformActivity extends AppCompatActivity {
         FloatBuffer points = pointCloud.getPoints();
         //sizeCheck SizeCheck = new sizeCheck(anchorPosition, pointCloud);
 
+        /*----------------------------------------------------------------------------------------*/
         //Debugging output PointCloud
         String x = String.valueOf(points.get());
         String y = String.valueOf(points.get());
         String z = String.valueOf(points.get());
         System.out.println(x + y + z);
+        /*----------------------------------------------------------------------------------------*/
 
 
     }
