@@ -63,7 +63,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private Vector3 anchorPosition;
   private boolean placed = false;
   private sizeCheck SizeCheck;
-  private Switch toggle;
+  private SwitchCompat toggle;
   private AnchorNode anchorNode;
 
 
