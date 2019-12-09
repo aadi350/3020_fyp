@@ -15,25 +15,18 @@
  */
 package com.google.ar.sceneform.samples.hellosceneform;
 
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
-import android.graphics.BitmapFactory;
+import android.support.v7.widget.SwitchCompat;
 import android.net.Uri;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.os.Build;
-import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
-import android.support.v4.view.KeyEventDispatcher;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.widget.CompoundButton;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
-import com.google.ar.core.ArCoreApk;
-import com.google.ar.core.Camera;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -61,18 +54,36 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private static final double MIN_OPENGL_VERSION = 3.0;
   private ArFragment arFragment;
   private ArSceneView arSceneView;
+  private TextView textView;
   private ModelRenderable andyRenderable;
+  private ModelRenderable duffelRenderable;
+  private TransformableNode andy;
+  private TransformableNode duffel;
+  //local coordinates of placed object anchor
   private Vector3 anchorPosition;
   private boolean placed = false;
+  private sizeCheck SizeCheck;
+  private Switch toggle;
+  private AnchorNode anchorNode;
+
 
     @Override
   @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
   protected void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
+      //instantiate sizeCheck object
+      SizeCheck = new sizeCheck();
 
+      //connect views
       setContentView(R.layout.activity_ux);
+      //connect switch
+      toggle = findViewById(R.id.change_duffel);
+
+      //for debugging
+      textView = findViewById(R.id.ux_indicatorText);
+
       arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-//        arSceneView = (ArSceneView) findViewById(R.id.ux_scnview);
+
       ModelRenderable.builder()
               .setSource(this, Uri.parse("suitcase.sfb"))
               .build()
@@ -86,45 +97,116 @@ public class HelloSceneformActivity extends AppCompatActivity {
                           return null;
                       });
 
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("duffel.sfb"))
+                .build()
+                .thenAccept(renderable -> duffelRenderable = renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+
 
       arFragment.setOnTapArPlaneListener(
               (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
                   if (andyRenderable == null || placed) {
                       return;
                   }
-                  andyRenderable.setShadowCaster(false);
+
                   // Create the Anchor at hit result
                   Anchor anchor = hitResult.createAnchor();
                   placed = true;
                   Log.i("TAP","Tap registered");
-                  AnchorNode anchorNode = new AnchorNode(anchor);
-                  Vector3 position = anchorNode.getLocalPosition();
+                  anchorNode = new AnchorNode(anchor);
+                  anchorPosition = anchorNode.getLocalPosition();
 
                   /*-------------------------------------------------------------------------------*/
                   //Debugging position of placed object
                   String[] pos = new String[3];
-                  pos[0] = String.valueOf(position.x);
-                  pos[1] = String.valueOf(position.y);
-                  pos[2] = String.valueOf(position.z);
-                  System.out.println("Object Position:" + pos[0] + pos[1] + pos[2]);
+                  pos[0] = String.valueOf(anchorPosition.x);
+                  pos[1] = String.valueOf(anchorPosition.y);
+                  pos[2] = String.valueOf(anchorPosition.z);
+                  Log.d("OBJ",pos[0] + pos[1] + pos[2]);
                   /*-------------------------------------------------------------------------------*/
-
+                  //attach arFragment to hitResult via anchorNode
                   anchorNode.setParent(arFragment.getArSceneView().getScene());
 
                   // Create the transformable andy and add it to the anchor.
-                  TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
-                  andy.getScaleController().setEnabled(false);
-                  andy.setParent(anchorNode);
-                  //get position of placed object
-                  anchorPosition = anchorNode.getLocalPosition();
-                    
-                  andy.setRenderable(andyRenderable);
-                  andy.select();
+                  andy = new TransformableNode(arFragment.getTransformationSystem());
+                  duffel= new TransformableNode(arFragment.getTransformationSystem());
+
+                  //choose model orientation based on switch
+                  checkModel();
+                  setModel();
+
                   arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
               });
 
         
   }
+
+    private void checkModel() {
+        if (toggle.isChecked())
+        //attach duffel
+        {
+            attachduffel();
+        }
+            else
+        {
+            attachMain();
+        }
+    }
+
+    private void attachMain() {
+        //attach main object
+        andyRenderable.setShadowCaster(false);
+        andy.getScaleController().setEnabled(false);
+        andy.setParent(this.anchorNode);
+        andy.setRenderable(andyRenderable);
+        andy.select();
+    }
+
+    private void attachduffel() {
+        //attach duffel
+        duffelRenderable.setShadowCaster(false);
+        duffel.getScaleController().setEnabled(false);
+        duffel.setParent(this.anchorNode);
+        duffel.setRenderable(duffelRenderable);
+        duffel.select();
+    }
+
+    private void setModel() {
+        toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // do something, the isChecked will be
+            // true if the switch is in the On position
+
+            andy.setParent(null);
+            andy.setRenderable(null);
+            duffel.setParent(null);
+            duffel.setRenderable(null);
+
+            if (isChecked)
+            {
+                //attach duffel
+                duffel.getScaleController().setEnabled(false);
+                duffel.setParent(anchorNode);
+                duffel.setRenderable(duffelRenderable);
+                duffel.select();
+            }
+            else
+            {
+                //attach main object
+                andy.getScaleController().setEnabled(false);
+                andy.setParent(anchorNode);
+                andy.setRenderable(andyRenderable);
+                andy.select();
+            }
+        });
+    }
 
     private void onSceneUpdate(FrameTime frameTime) {
         // Let the fragment update its state first.
@@ -143,17 +225,19 @@ public class HelloSceneformActivity extends AppCompatActivity {
         Frame frame = arFragment.getArSceneView().getArFrame();
         PointCloud pointCloud=frame.acquirePointCloud();
         FloatBuffer points = pointCloud.getPoints();
-        //sizeCheck SizeCheck = new sizeCheck(anchorPosition, pointCloud);
+
 
         /*----------------------------------------------------------------------------------------*/
+        //SizeCheck finds whether object is inside box
+        boolean fits = SizeCheck.objectFits(points, anchorPosition);
         //Debugging output PointCloud
-        String x = String.valueOf(points.get());
-        String y = String.valueOf(points.get());
-        String z = String.valueOf(points.get());
-        System.out.println(x + y + z);
+//        String x = String.valueOf(points.get());
+//        String y = String.valueOf(points.get());
+//        String z = String.valueOf(points.get());
+
+        //System.out.println(x + y + z);
+        textView.setText(String.valueOf(fits));
         /*----------------------------------------------------------------------------------------*/
-
-
     }
 
 }

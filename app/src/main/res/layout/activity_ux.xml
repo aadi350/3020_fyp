@@ -23,10 +23,29 @@
       android:id="@+id/ux_fragment"
       android:layout_width="match_parent"
       android:layout_height="match_parent" />
-<!--  <com.google.ar.sceneform.ArSceneView-->
-<!--      android:name="com.google.ar.sceneform.ux.ArScnView"-->
-<!--      android:id="@+id/ux_scnview"-->
-<!--      android:layout_width="match_parent"-->
-<!--      android:layout_height="match_parent" />-->
+
+  <TextView
+      android:id="@+id/ux_indicatorText"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginBottom="20dip"
+      android:layout_gravity="center_horizontal|bottom"
+
+      android:padding="12dip"
+
+      android:background="#AA000000"
+      android:textColor="#ffffffff"
+
+      android:text="" />
+
+  <Switch
+
+      android:id="@+id/change_duffel"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="end|bottom"
+      android:layout_marginBottom="20dip"
+      android:padding="12dip"
+     />
 
 </FrameLayout>

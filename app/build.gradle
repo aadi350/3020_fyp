@@ -75,3 +75,8 @@ sceneform.asset('sampledata/models/suitcase.obj',
         'default',
         'sampledata/models/suitcase.sfa',
         'src/main/assets/suitcase')
+
+sceneform.asset('sampledata/models/duffel.obj',
+        'default',
+        'sampledata/models/duffel.sfa',
+        'src/main/assets/duffel')
