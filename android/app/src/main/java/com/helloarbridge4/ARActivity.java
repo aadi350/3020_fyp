@@ -224,6 +224,8 @@ public class ARActivity extends AppCompatActivity {
         });
     }
 
+
+    //API Required Calls
     public static boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             Log.e(TAG, "Sceneform requires Android N or later");
