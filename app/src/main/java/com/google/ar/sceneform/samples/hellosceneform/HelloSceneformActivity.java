@@ -22,8 +22,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
@@ -55,10 +53,19 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private ArFragment arFragment;
   private ArSceneView arSceneView;
   private TextView textView;
+
+  //Sceneform Models
   private ModelRenderable andyRenderable;
   private ModelRenderable duffelRenderable;
   private TransformableNode andy;
   private TransformableNode duffel;
+  private ModelRenderable greenRenderable;
+  private ModelRenderable redRenderable;
+  private TransformableNode green;
+  private TransformableNode red;
+
+
+
   //local coordinates of placed object anchor
   private Vector3 anchorPosition;
   private boolean placed = false;
@@ -66,13 +73,18 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private SwitchCompat toggle;
   private AnchorNode anchorNode;
 
+  private sizeCheck sizeCheckObj = new sizeCheck();
+
 
     @Override
   @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
   protected void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
       //instantiate sizeCheck object
-      SizeCheck = new sizeCheck();
+
+
+
+
 
       //connect views
       setContentView(R.layout.activity_ux);
@@ -84,6 +96,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
 
       arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
 
+      //Main suitcase object
       ModelRenderable.builder()
               .setSource(this, Uri.parse("suitcase.sfb"))
               .build()
@@ -97,6 +110,8 @@ public class HelloSceneformActivity extends AppCompatActivity {
                           return null;
                       });
 
+
+        //main Duffel Object
         ModelRenderable.builder()
                 .setSource(this, Uri.parse("duffel.sfb"))
                 .build()
@@ -110,6 +125,33 @@ public class HelloSceneformActivity extends AppCompatActivity {
                             return null;
                         });
 
+        //green suitcase object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("suitcase_green.sfb"))
+                .build()
+                .thenAccept(renderable -> greenRenderable = renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+
+        //red suitcase object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("suitcase_red.sfb"))
+                .build()
+                .thenAccept(renderable -> redRenderable = renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
 
       arFragment.setOnTapArPlaneListener(
               (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
@@ -125,19 +167,19 @@ public class HelloSceneformActivity extends AppCompatActivity {
                   anchorPosition = anchorNode.getLocalPosition();
 
                   /*-------------------------------------------------------------------------------*/
-                  //Debugging position of placed object
-                  String[] pos = new String[3];
-                  pos[0] = String.valueOf(anchorPosition.x);
-                  pos[1] = String.valueOf(anchorPosition.y);
-                  pos[2] = String.valueOf(anchorPosition.z);
-                  Log.d("OBJ",pos[0] + pos[1] + pos[2]);
+                  Log.d("OBJLocationDebug",String.valueOf(anchorPosition.x) +
+                                                    String.valueOf(anchorPosition.y) +
+                                                    String.valueOf(anchorPosition.z));
                   /*-------------------------------------------------------------------------------*/
+
                   //attach arFragment to hitResult via anchorNode
                   anchorNode.setParent(arFragment.getArSceneView().getScene());
 
                   // Create the transformable andy and add it to the anchor.
                   andy = new TransformableNode(arFragment.getTransformationSystem());
                   duffel= new TransformableNode(arFragment.getTransformationSystem());
+                  red = new TransformableNode(arFragment.getTransformationSystem());
+                  green = new TransformableNode(arFragment.getTransformationSystem());
 
                   //choose model orientation based on switch
                   checkModel();
@@ -179,6 +221,24 @@ public class HelloSceneformActivity extends AppCompatActivity {
         duffel.select();
     }
 
+    private void attachGreeen(){
+        //attach green suitcase
+        greenRenderable.setShadowCaster(false);
+        green.getScaleController().setEnabled(false);
+        green.setParent(this.anchorNode);
+        green.setRenderable(greenRenderable);
+        green.select();
+    }
+
+    private void attachRed(){
+        //attach red suitcase
+        redRenderable.setShadowCaster(false);
+        red.getScaleController().setEnabled(false);
+        red.setParent(this.anchorNode);
+        red.setRenderable(greenRenderable);
+        red.select();
+    }
+
     private void setModel() {
         toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
             // do something, the isChecked will be
@@ -213,6 +273,16 @@ public class HelloSceneformActivity extends AppCompatActivity {
         Log.i("onSceneUpdate","onSceneUpdate");
         arFragment.onUpdate(frameTime);
 
+
+        anchorPosition = anchorNode.getLocalPosition();
+        /*-------------------------------------------------------------------------------*/
+        //Debugging position of placed object
+        String[] pos = new String[3];
+        pos[0] = String.valueOf(anchorPosition.x);
+        pos[1] = String.valueOf(anchorPosition.y);
+        pos[2] = String.valueOf(anchorPosition.z);
+        Log.d("OBJLocationDebug",pos[0] + pos[1] + pos[2]);
+        /*-------------------------------------------------------------------------------*/
         // If there is no frame then don't process anything.
         if (arFragment.getArSceneView().getArFrame() == null) {
             return;
@@ -227,16 +297,25 @@ public class HelloSceneformActivity extends AppCompatActivity {
         FloatBuffer points = pointCloud.getPoints();
 
 
+        //set as carryon for testing
+        Log.i("onSceneUpdate","prior to sizeCheckObject");
+        sizeCheckObj.setObjectType(true);
+        sizeCheckObj.setObjectAnchor(anchorPosition);
+        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
+        sizeCheckObj.loadPointsFromFloatBuffer(points);
+        sizeCheckObj.comparePointsToLimits();
+        boolean fits = sizeCheckObj.ifObjectFits();
+
         /*----------------------------------------------------------------------------------------*/
         //SizeCheck finds whether object is inside box
-        boolean fits = SizeCheck.objectFits(points, anchorPosition);
         //Debugging output PointCloud
 //        String x = String.valueOf(points.get());
 //        String y = String.valueOf(points.get());
 //        String z = String.valueOf(points.get());
-
+        String debug_text = (fits) ? "" : "No Object Detected";
         //System.out.println(x + y + z);
-        textView.setText(String.valueOf(fits));
+        textView.setText(String.valueOf(debug_text));
+        Log.d("OBJ_DETECT",debug_text);
         /*----------------------------------------------------------------------------------------*/
     }
 

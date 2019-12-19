@@ -1,74 +1,144 @@
 package com.google.ar.sceneform.samples.hellosceneform;
 
-import com.google.ar.core.PointCloud;
+import android.util.Log;
+
 import com.google.ar.sceneform.math.Vector3;
 
+import java.nio.BufferUnderflowException;
 import java.nio.FloatBuffer;
 
-public class sizeCheck {
-    //master boolean
-    private boolean fits;
+class sizeCheck {
 
-    //struct for instantaneous point in PointCloud
-    private Vector3 vector_pc = new Vector3(0.00f, 0.00f, 0.00f);
+    private boolean objectWithinBounds = false;
+    private final float Z_THRESH = 0.15f;
+    //Dimensional limits for carry-on object
+    private final Vector3 CARRYON_LIM   = new Vector3(0.115f,0.175f,0.56f);
+    private final Vector3 CARRYON_SIZE = new Vector3(0.23f,0.35f,0.56f);
+    private final Vector3 CARRYON_BOUND = CARRYON_LIM;//new Vector3(1.0f,1.0f,1.0f);
 
-    //Constants
-    //Maximum and Minimum distances from anchor to register as oversized
-    //distances halfed
-    private static final Vector3 MAX = new Vector3(0.315f, 0.375f, 0.48f);
-    private static final Vector3 MIN = new Vector3(0.115f, 0.175f, 0.28f);
-    //used to exclude plane from point detection
-    private static final float Z_THRESH = 0.04f;
-    //used to set relative limits from centre of placed object
-    private Vector3 max;
-    private Vector3 min;
+    //Dimensional limits for personal item
+    private final Vector3 PERSONAL_LIM  = new Vector3(0.075f,0.165f,0.43f);
+    private final Vector3 PERSONAL_SIZE  = new Vector3(0.15f,0.33f,0.43f);
 
-    //to hold point cloud
-    private FloatBuffer floatBuffer;
+    private Vector3 objectSizeLimits = Vector3.zero();
+    private Vector3 objectCorner   = Vector3.zero();
+    private Vector3 objectSizeActual = Vector3.zero();
+    private Vector3 objectLocation = Vector3.zero();
+    private Vector3 pointLocationRelativeToCorner = Vector3.zero();
+    private Vector3 pointLocationAbsolute = Vector3.zero();
+    private boolean bagTypeFalseIfCarryon = false;
+
+    private FloatBuffer pointBuffer;
 
 
-
-    public boolean objectFits(FloatBuffer pointsBuffer, Vector3 anchor)
+    //sets type of carry-on item by input argument
+    public void setObjectType(boolean type)
     {
-        //Master method
-        fits = false;
-        /*-----------------------------------------------------------------------------------------*/
-        //preliminary debugging
-        fits = boundingbox(pointsBuffer, anchor);
-        /*-----------------------------------------------------------------------------------------*/
-        return fits;
-
+        this.bagTypeFalseIfCarryon = type;
+        Log.d("setObjectType", Boolean.toString(bagTypeFalseIfCarryon));
     }
 
-    //for debugging
-    private boolean boundingbox (FloatBuffer pointsBuffer, Vector3 anchor)
+    public void setObjectAnchor(Vector3 anchor)
     {
-        //boolean for 3-directions
-        boolean fits_x, fits_y, fits_z;
-
-        //Delineate points from floatbuffer
-        Float[] points = new Float[3];
-        points[0] = pointsBuffer.get();     //x
-        points[1] = pointsBuffer.get();     //y
-        points[2] = pointsBuffer.get();     //z
-
-        //define coordinates of maximum object boundary
-        //set boundaries for x
-        float x_up      = anchor.x + MAX.x;
-        float x_down    = anchor.x - MAX.x;
-        //set boundaries for y
-        float y_up      = anchor.y + MAX.x;
-        float y_down    = anchor.y - MAX.x;
-
-        //set boundary for z
-        float z_up        =  anchor.z + MAX.z;
-
-        fits_x = (points[0] > x_down && points[0] < x_up);
-        fits_y = (points[1] > y_down && points[1] < y_up);
-        fits_z = (points[2] < z_up && points[2] > Z_THRESH);
-
-        return (fits_x & fits_y & fits_z);
+        try {
+            objectLocation = anchor;
+            Log.d("setObjectAnchor",Float.toString(anchor.x) + Float.toString(anchor.y) + Float.toString(anchor.z));
+        } catch (Exception e)
+        {
+            Log.e("setObjectAnchor",e.getMessage());
+        }
     }
 
 
+
+
+    //default constructor for JUnit 5
+    public sizeCheck() {
+
+    }
+
+
+    public void loadPointsFromFloatBuffer(FloatBuffer points)
+    {
+        try{
+            this.pointBuffer = points;
+            Log.i("loadPointsFromFloatBuffer",": Load Success");
+        } catch (Exception e)
+        {
+            Log.e("loadPointsFromFloatBuffer",e.getMessage());
+        }
+    }
+
+    public void comparePointsToLimits()
+    {
+        try {
+            do {
+                pointLocationAbsolute.set(
+                        pointBuffer.get(),
+                        pointBuffer.get(),
+                        pointBuffer.get()
+                );
+
+                pointLocationRelativeToCorner = Vector3.subtract(pointLocationAbsolute,objectCorner);
+
+                objectWithinBounds = (
+//                ifUpperGreaterThanLower(pointLocationAbsolute, objectCorner) &&
+//                ifUpperGreaterThanLower(CARRYON_SIZE, pointLocationRelativeToCorner) &&
+                        //object detected
+                        ifUpperGreaterThanLower(CARRYON_BOUND, pointLocationRelativeToCorner)
+                );
+            } while(pointBuffer.hasRemaining());
+        } catch (BufferUnderflowException e)
+        {
+            Log.e("comparePointsToLimits","Buffer UnderFlow");
+        }
+    }
+
+    public boolean ifObjectFits()
+    {
+        return this.objectWithinBounds;
+    }
+
+    private boolean ifUpperGreaterThanLower(Vector3 upper, Vector3 lower)
+    {
+        return (
+                        (upper.x >= lower.x) &&
+                        (upper.y >= lower.y) &&
+                        (upper.z >= lower.z + Z_THRESH)
+                );
+    }
+
+    public void setObjectSizeLimits()
+    {
+        objectSizeLimits = (bagTypeFalseIfCarryon) ? PERSONAL_LIM : CARRYON_LIM;
+        objectCorner.set(
+                objectLocation.x - objectSizeLimits.x,
+                objectLocation.y - objectSizeLimits.y,
+                objectLocation.z
+                );
+    }
+
+
+
+
+    //getter methods for testing
+    public FloatBuffer getPointsFromFloatBuffer()
+    {
+        return this.pointBuffer;
+    }
+
+    public boolean getBagType()
+    {
+        return this.bagTypeFalseIfCarryon;
+    }
+
+    public Vector3 getLimits()
+    {
+        return objectSizeLimits;
+    }
+
+    public Vector3 getAnchor()
+    {
+        return objectLocation;
+    }
 }
