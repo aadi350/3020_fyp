@@ -331,6 +331,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
             Log.i("onSceneUpdate", "prior to sizeCheckObject");
             //set as carryon for testing
             sizeCheckObj.setObjectType(true);
+            sizeCheckObj.setObjectSizeLimits(toggle.isChecked());
             sizeCheckObj.setObjectAnchor(anchorPosition);
             Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
             sizeCheckObj.loadPointsFromFloatBuffer(points);

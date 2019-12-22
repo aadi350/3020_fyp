@@ -13,9 +13,13 @@ class sizeCheck {
     //false if exceeds
     private boolean objectWithinBounds  = false;
 
+    private boolean duffel = false;
+
     private final float Z_THRESH = 0.15f;
     //Dimensional limits for carry-on object
     private final Vector3 CARRYON_LIM   = new Vector3(0.115f,0.175f,0.56f);
+    private final Vector3 CARRYON_LIM_DUFFEL = new Vector3(0.28f,0.175f,0.23f);
+
     private final Vector3 CARRYON_SIZE = new Vector3(0.23f,0.35f,0.56f);
     private final Vector3 CARRYON_BOUND = CARRYON_LIM;//new Vector3(1.0f,1.0f,1.0f);
 
@@ -128,9 +132,12 @@ class sizeCheck {
                 );
     }
 
-    public void setObjectSizeLimits()
+    public void setObjectSizeLimits(boolean duffel)
     {
         objectSizeLimits = (bagTypeFalseIfCarryon) ? PERSONAL_LIM : CARRYON_LIM;
+        if (duffel) {
+            objectSizeLimits = CARRYON_LIM_DUFFEL;
+        }
         objectCorner.set(
                 objectLocation.x - objectSizeLimits.x,
                 objectLocation.y - objectSizeLimits.y,
