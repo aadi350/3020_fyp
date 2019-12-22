@@ -9,7 +9,10 @@ import java.nio.FloatBuffer;
 
 class sizeCheck {
 
-    private boolean objectWithinBounds = false;
+    private boolean objectDetected      = false;
+    //false if exceeds
+    private boolean objectWithinBounds  = false;
+
     private final float Z_THRESH = 0.15f;
     //Dimensional limits for carry-on object
     private final Vector3 CARRYON_LIM   = new Vector3(0.115f,0.175f,0.56f);
@@ -81,12 +84,13 @@ class sizeCheck {
 
                 pointLocationRelativeToCorner = Vector3.subtract(pointLocationAbsolute,objectCorner);
 
-                objectWithinBounds = (
-//                ifUpperGreaterThanLower(pointLocationAbsolute, objectCorner) &&
-//                ifUpperGreaterThanLower(CARRYON_SIZE, pointLocationRelativeToCorner) &&
-                        //object detected
-                        ifUpperGreaterThanLower(CARRYON_BOUND, pointLocationRelativeToCorner)
-                );
+                objectDetected = ifUpperGreaterThanLower(CARRYON_BOUND, pointLocationRelativeToCorner);
+
+//                objectWithinBounds = (
+//                    ifUpperGreaterThanLower(pointLocationAbsolute, objectCorner) &&
+//                    ifUpperGreaterThanLower(CARRYON_SIZE, pointLocationRelativeToCorner)
+//                );
+
             } while(pointBuffer.hasRemaining());
         } catch (BufferUnderflowException e)
         {
@@ -94,9 +98,25 @@ class sizeCheck {
         }
     }
 
-    public boolean ifObjectFits()
+    public int ifObjectFits()
     {
-        return this.objectWithinBounds;
+        try {
+            if (objectDetected && objectWithinBounds) {
+                return 2;
+            }
+            if (objectDetected && !objectWithinBounds) {
+                return 1;
+            }
+            if (!objectDetected) {
+                return 0;
+            }
+            else {
+                return 0;
+            }
+        } catch (NullPointerException n) {
+            Log.e("ifObjectFits","Return Status failed: " + n.getMessage());
+        }
+        return 0;
     }
 
     private boolean ifUpperGreaterThanLower(Vector3 upper, Vector3 lower)

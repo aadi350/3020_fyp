@@ -44,12 +44,11 @@ import com.google.ar.sceneform.ux.TransformableNode;
 import java.io.Console;
 import java.nio.FloatBuffer;
 
-/**
- * This is an example activity that uses the Sceneform UX package to make common AR tasks easier.
- */
+
 public class HelloSceneformActivity extends AppCompatActivity {
   private static final String TAG = HelloSceneformActivity.class.getSimpleName();
   private static final double MIN_OPENGL_VERSION = 3.0;
+  private static final int FRAME_COUNT_THRESH = 45;
   private ArFragment arFragment;
   private ArSceneView arSceneView;
   private TextView textView;
@@ -64,7 +63,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private TransformableNode green;
   private TransformableNode red;
 
-
+  private int frameCount = 0;
 
   //local coordinates of placed object anchor
   private Vector3 anchorPosition;
@@ -72,6 +71,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private sizeCheck SizeCheck;
   private SwitchCompat toggle;
   private AnchorNode anchorNode;
+  private int changeVar = 0;
 
   private sizeCheck sizeCheckObj = new sizeCheck();
 
@@ -182,7 +182,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
                   green = new TransformableNode(arFragment.getTransformationSystem());
 
                   //choose model orientation based on switch
-                  checkModel();
+                  //checkModel();
                   setModel();
 
                   arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
@@ -221,7 +221,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
         duffel.select();
     }
 
-    private void attachGreeen(){
+    private void attachGreenMain(){
         //attach green suitcase
         greenRenderable.setShadowCaster(false);
         green.getScaleController().setEnabled(false);
@@ -230,93 +230,159 @@ public class HelloSceneformActivity extends AppCompatActivity {
         green.select();
     }
 
-    private void attachRed(){
+    private void attachRedMain(){
         //attach red suitcase
         redRenderable.setShadowCaster(false);
         red.getScaleController().setEnabled(false);
         red.setParent(this.anchorNode);
-        red.setRenderable(greenRenderable);
+        red.setRenderable(redRenderable);
         red.select();
     }
 
     private void setModel() {
+        removeAllModels();
+        attachMain();
         toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // do something, the isChecked will be
-            // true if the switch is in the On position
 
-            andy.setParent(null);
-            andy.setRenderable(null);
-            duffel.setParent(null);
-            duffel.setRenderable(null);
-
-            if (isChecked)
-            {
-                //attach duffel
-                duffel.getScaleController().setEnabled(false);
-                duffel.setParent(anchorNode);
-                duffel.setRenderable(duffelRenderable);
-                duffel.select();
+            removeAllModels();
+            if (isChecked) {
+                attachduffel();
             }
-            else
-            {
-                //attach main object
-                andy.getScaleController().setEnabled(false);
-                andy.setParent(anchorNode);
-                andy.setRenderable(andyRenderable);
-                andy.select();
+            else {
+                attachMain();
             }
         });
     }
 
+    private void setRedModel() {
+            // do something, the isChecked will be
+            // true if the switch is in the On position
+            removeAllModels();
+            if (toggle.isChecked()) {
+                //attach duffel
+                attachduffel();
+            }
+            else {
+                //attach main object
+                attachRedMain();
+            }
+    }
+
+    private void setGreenModel() {
+
+            // do something, the isChecked will be
+            // true if the switch is in the On position
+            removeAllModels();
+            if (toggle.isChecked()) {
+                //attach duffel
+                attachduffel();
+            }
+            else {
+                //attach main object
+                attachGreenMain();
+            }
+    }
+
+    private void removeAllModels(){
+        //andy.setParent(null);
+        andy.setRenderable(null);
+        //duffel.setParent(null);
+        duffel.setRenderable(null);
+        //red.setParent(null);
+        red.setRenderable(null);
+        //green.setParent(null);
+        green.setRenderable(null);
+    }
+
     private void onSceneUpdate(FrameTime frameTime) {
-        // Let the fragment update its state first.
-        Log.i("onSceneUpdate","onSceneUpdate");
-        arFragment.onUpdate(frameTime);
+        frameCount++;
+        Log.d("onSceneUpdate", String.valueOf(frameCount));
+        if (frameCount == FRAME_COUNT_THRESH) {
+            frameCount = 0;
+            // Let the fragment update its state first.
+            Log.i("onSceneUpdate", "onSceneUpdate");
+            arFragment.onUpdate(frameTime);
 
 
-        anchorPosition = anchorNode.getLocalPosition();
-        /*-------------------------------------------------------------------------------*/
-        //Debugging position of placed object
-        String[] pos = new String[3];
-        pos[0] = String.valueOf(anchorPosition.x);
-        pos[1] = String.valueOf(anchorPosition.y);
-        pos[2] = String.valueOf(anchorPosition.z);
-        Log.d("OBJLocationDebug",pos[0] + pos[1] + pos[2]);
-        /*-------------------------------------------------------------------------------*/
-        // If there is no frame then don't process anything.
-        if (arFragment.getArSceneView().getArFrame() == null) {
-            return;
-        }
-        // If ARCore is not tracking yet, then don't process anything.
-        if (arFragment.getArSceneView().getArFrame().getCamera().getTrackingState() != TrackingState.TRACKING) {
-            return;
-        }
+            anchorPosition = anchorNode.getLocalPosition();
+            /*-------------------------------------------------------------------------------*/
+            //Debugging position of placed object
+            String[] pos = new String[3];
+            pos[0] = String.valueOf(anchorPosition.x);
+            pos[1] = String.valueOf(anchorPosition.y);
+            pos[2] = String.valueOf(anchorPosition.z);
+            Log.d("OBJLocationDebug", pos[0] + pos[1] + pos[2]);
+            /*-------------------------------------------------------------------------------*/
+            // If there is no frame then don't process anything.
+            if (arFragment.getArSceneView().getArFrame() == null) {
+                return;
+            }
+            // If ARCore is not tracking yet, then don't process anything.
+            if (arFragment.getArSceneView().getArFrame().getCamera().getTrackingState() != TrackingState.TRACKING) {
+                return;
+            }
 
-        Frame frame = arFragment.getArSceneView().getArFrame();
-        PointCloud pointCloud=frame.acquirePointCloud();
-        FloatBuffer points = pointCloud.getPoints();
+            //acquiree feature points
+            Frame frame = arFragment.getArSceneView().getArFrame();
+            PointCloud pointCloud = frame.acquirePointCloud();
+            FloatBuffer points = pointCloud.getPoints();
 
 
-        //set as carryon for testing
-        Log.i("onSceneUpdate","prior to sizeCheckObject");
-        sizeCheckObj.setObjectType(true);
-        sizeCheckObj.setObjectAnchor(anchorPosition);
-        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
-        sizeCheckObj.loadPointsFromFloatBuffer(points);
-        sizeCheckObj.comparePointsToLimits();
-        boolean fits = sizeCheckObj.ifObjectFits();
+            Log.i("onSceneUpdate", "prior to sizeCheckObject");
+            //set as carryon for testing
+            sizeCheckObj.setObjectType(true);
+            sizeCheckObj.setObjectAnchor(anchorPosition);
+            Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
+            sizeCheckObj.loadPointsFromFloatBuffer(points);
+            sizeCheckObj.comparePointsToLimits();
+            int fits = sizeCheckObj.ifObjectFits();
+            Log.d("onSceneUpdate", "Fits: " + String.valueOf(fits));
 
-        /*----------------------------------------------------------------------------------------*/
-        //SizeCheck finds whether object is inside box
-        //Debugging output PointCloud
+            //set appropriate colour renderable
+
+            if (returnTrueIfChanged(fits))
+            {
+                switch (fits) {
+                    case 0:
+                        //No Object Detected
+                        setModel();
+                        break;
+                    case 1:
+                        //Oversized object detected
+                        setRedModel();
+                        break;
+                    case 2:
+                        //Object detected within bounds
+                        setGreenModel();
+                        break;
+                    default:
+                        removeAllModels();
+                        break;
+                }
+            }
+            /*----------------------------------------------------------------------------------------*/
+            //SizeCheck finds whether object is inside box
+            //Debugging output PointCloud
 //        String x = String.valueOf(points.get());
 //        String y = String.valueOf(points.get());
 //        String z = String.valueOf(points.get());
-        String debug_text = (fits) ? "" : "No Object Detected";
-        //System.out.println(x + y + z);
-        textView.setText(String.valueOf(debug_text));
-        Log.d("OBJ_DETECT",debug_text);
-        /*----------------------------------------------------------------------------------------*/
-    }
+            String debug_text = (fits == 0) ? "Object Not Detected, Fits: " + fits : "No Object Detected, Fits: " + fits;
+            //System.out.println(x + y + z);
+            textView.setText(String.valueOf(debug_text));
+            Log.d("OBJ_DETECT", debug_text);
+            /*----------------------------------------------------------------------------------------*/
+            }
+        }
+
+        private boolean returnTrueIfChanged(int i) {
+
+            if (this.changeVar == i) {
+                return false;
+            }
+            this.changeVar = i;
+            return true;
+        }
+
+
 
 }
