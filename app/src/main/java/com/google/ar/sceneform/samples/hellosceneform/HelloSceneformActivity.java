@@ -25,6 +25,7 @@ import android.view.MotionEvent;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -48,10 +49,11 @@ import java.nio.FloatBuffer;
 public class HelloSceneformActivity extends AppCompatActivity {
   private static final String TAG = HelloSceneformActivity.class.getSimpleName();
   private static final double MIN_OPENGL_VERSION = 3.0;
-  private static final int FRAME_COUNT_THRESH = 45;
+  private static final int FRAME_COUNT_THRESH = 60;
   private ArFragment arFragment;
   private ArSceneView arSceneView;
   private TextView textView;
+  private String debug_text;
 
   //Sceneform Models
   private ModelRenderable andyRenderable;
@@ -73,7 +75,8 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private AnchorNode anchorNode;
   private int changeVar = 0;
 
-  private sizeCheck sizeCheckObj = new sizeCheck();
+  private sizeCheck sizeCheckObj;
+    private Session session;
 
 
     @Override
@@ -81,11 +84,13 @@ public class HelloSceneformActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
       //instantiate sizeCheck object
-
-
-
-
-
+        try{
+            session = new Session(this);
+        } catch (Exception e) {
+            Log.e("session", e.getMessage());
+        }
+        sizeCheckObj = new sizeCheck();
+        session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
       //connect views
       setContentView(R.layout.activity_ux);
       //connect switch
@@ -158,6 +163,8 @@ public class HelloSceneformActivity extends AppCompatActivity {
                   if (andyRenderable == null || placed) {
                       return;
                   }
+                  //horizontal plane detection
+                  session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
 
                   // Create the Anchor at hit result
                   Anchor anchor = hitResult.createAnchor();
@@ -174,6 +181,13 @@ public class HelloSceneformActivity extends AppCompatActivity {
 
                   //attach arFragment to hitResult via anchorNode
                   anchorNode.setParent(arFragment.getArSceneView().getScene());
+
+                  try {
+                      Config config = new Config(arSceneView.getSession());
+                      config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+                  } catch (Exception e){
+                      Log.e("getSession",e.getMessage());
+                  }
 
                   // Create the transformable andy and add it to the anchor.
                   andy = new TransformableNode(arFragment.getTransformationSystem());
@@ -296,9 +310,9 @@ public class HelloSceneformActivity extends AppCompatActivity {
 
     private void onSceneUpdate(FrameTime frameTime) {
         frameCount++;
+        session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
         Log.d("onSceneUpdate", String.valueOf(frameCount));
-        if (frameCount == FRAME_COUNT_THRESH) {
-            frameCount = 0;
+
             // Let the fragment update its state first.
             Log.i("onSceneUpdate", "onSceneUpdate");
             arFragment.onUpdate(frameTime);
@@ -326,52 +340,67 @@ public class HelloSceneformActivity extends AppCompatActivity {
             Frame frame = arFragment.getArSceneView().getArFrame();
             PointCloud pointCloud = frame.acquirePointCloud();
             FloatBuffer points = pointCloud.getPoints();
+            Log.i("pointCloud",String.valueOf(points));
 
 
             Log.i("onSceneUpdate", "prior to sizeCheckObject");
-            //set as carryon for testing
-            sizeCheckObj.setObjectType(true);
-            sizeCheckObj.setObjectSizeLimits(toggle.isChecked());
-            sizeCheckObj.setObjectAnchor(anchorPosition);
-            Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
-            sizeCheckObj.loadPointsFromFloatBuffer(points);
-            sizeCheckObj.comparePointsToLimits();
-            int fits = sizeCheckObj.ifObjectFits();
-            Log.d("onSceneUpdate", "Fits: " + String.valueOf(fits));
 
-            //set appropriate colour renderable
+        //set as carryon for testing
+        sizeCheckObj.setObjectType(false);
+        sizeCheckObj.setObjectSizeLimits(toggle.isChecked());
+        sizeCheckObj.setObjectAnchor(anchorPosition);
+        Log.d("setObjectAnchor", String.valueOf(anchorPosition));
+        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
+        sizeCheckObj.loadPointsFromFloatBuffer(points);
+        sizeCheckObj.comparePointsToLimits();
+        int fits = sizeCheckObj.ifObjectFits();
+        Log.d("onSceneUpdate", "Fits: " + String.valueOf(fits));
+        pointCloud.release();
+        if (frameCount == FRAME_COUNT_THRESH) {
+            frameCount = 0;
 
-            if (returnTrueIfChanged(fits))
-            {
-                switch (fits) {
-                    case 0:
-                        //No Object Detected
-                        setModel();
-                        break;
-                    case 1:
-                        //Oversized object detected
-                        setRedModel();
-                        break;
-                    case 2:
-                        //Object detected within bounds
-                        setGreenModel();
-                        break;
-                    default:
-                        removeAllModels();
-                        break;
+                //set appropriate colour renderable
+
+                if (returnTrueIfChanged(fits))
+                {
+                    switch (fits) {
+                        case 0:
+                            //No Object Detected
+                            setModel();
+                            break;
+                        case 1:
+                            //Oversized object detected
+                            setRedModel();
+                            break;
+                        case 2:
+                            //Object detected within bounds
+                            setGreenModel();
+                            break;
+                        default:
+                            removeAllModels();
+                            break;
+                    }
                 }
-            }
-            /*----------------------------------------------------------------------------------------*/
-            //SizeCheck finds whether object is inside box
-            //Debugging output PointCloud
+
+                /*----------------------------------------------------------------------------------------*/
+                //SizeCheck finds whether object is inside box
+                //Debugging output PointCloud
 //        String x = String.valueOf(points.get());
 //        String y = String.valueOf(points.get());
 //        String z = String.valueOf(points.get());
-            String debug_text = (fits == 0) ? "Object Not Detected, Fits: " + fits : "No Object Detected, Fits: " + fits;
-            //System.out.println(x + y + z);
-            textView.setText(String.valueOf(debug_text));
-            Log.d("OBJ_DETECT", debug_text);
-            /*----------------------------------------------------------------------------------------*/
+                if (fits == 0) {
+                    debug_text = "Object Not Detected, Fits: " + fits;
+                } else if (fits == 1) {
+                    debug_text = "Large Object Detected, Fits: " + fits;
+                } else if (fits == 2){
+                    debug_text = "Object Detected, Fits: " + fits;
+                } else {
+                    debug_text = "";
+                }
+                //System.out.println(x + y + z);
+                textView.setText(debug_text);
+                Log.d("OBJ_DETECT", debug_text);
+                /*----------------------------------------------------------------------------------------*/
             }
         }
 
