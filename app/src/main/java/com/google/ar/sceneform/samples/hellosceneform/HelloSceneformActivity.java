@@ -108,19 +108,74 @@ public class HelloSceneformActivity extends AppCompatActivity {
       textView = findViewById(R.id.ux_indicatorText);
       arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
 
-      //Main suitcase object
-      ModelRenderable.builder()
-              .setSource(this, Uri.parse("suitcase.sfb"))
-              .build()
-              .thenAccept(renderable -> andyRenderable = renderable)
-              .exceptionally(
-                      throwable -> {
-                          Toast toast =
-                                  Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                          toast.setGravity(Gravity.CENTER, 0, 0);
-                          toast.show();
-                          return null;
-                      });
+      loadRenderables();
+
+      arFragment.setOnTapArPlaneListener(
+              (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
+                  if (isRenderableNull() || placed) {
+                      Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
+                      return;
+                  }
+                  Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
+
+                  //horizontal plane detection
+                  session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+
+                  // Create the Anchor at hit result
+                  Anchor anchor = hitResult.createAnchor();
+                  placed = true;
+
+                  anchorNode = new AnchorNode(anchor);
+                  anchorPosition = anchorNode.getLocalPosition();
+
+                  //attach arFragment to hitResult via anchorNode
+                  anchorNode.setParent(arFragment.getArSceneView().getScene());
+
+                  try {
+                      Config config = new Config(arSceneView.getSession());
+                      config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+                  } catch (Exception e){
+                      Log.e("getSession",e.getMessage());
+                  }
+
+                  // Create the transformable andy and add it to the anchor.
+                  andy = new TransformableNode(arFragment.getTransformationSystem());
+                  duffel= new TransformableNode(arFragment.getTransformationSystem());
+                  red = new TransformableNode(arFragment.getTransformationSystem());
+                  green = new TransformableNode(arFragment.getTransformationSystem());
+
+                  //choose model orientation based on switch
+                  setModel();
+                  arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
+              });
+  }
+
+    private boolean isRenderableNull(){
+        return (
+                    andyRenderable == null ||
+                            duffelRenderable == null ||
+                            greenRenderable == null ||
+                            redRenderable == null ||
+                            personalItemRenderable == null ||
+                            personalItemGreenRenderable == null ||
+                            personalItemRedRenderable == null
+                );
+    }
+
+    private void loadRenderables(){
+        //Main suitcase object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("suitcase.sfb"))
+                .build()
+                .thenAccept(renderable -> andyRenderable = renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
 
 
         //main Duffel Object
@@ -206,54 +261,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
                             toast.show();
                             return null;
                         });
-
-
-      arFragment.setOnTapArPlaneListener(
-              (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                  if (andyRenderable == null || placed) {
-                      return;
-                  }
-                  //horizontal plane detection
-                  session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
-
-                  // Create the Anchor at hit result
-                  Anchor anchor = hitResult.createAnchor();
-                  placed = true;
-                  Log.i("TAP","Tap registered");
-                  anchorNode = new AnchorNode(anchor);
-                  anchorPosition = anchorNode.getLocalPosition();
-
-                  /*-------------------------------------------------------------------------------*/
-                  Log.d("OBJLocationDebug",String.valueOf(anchorPosition.x) +
-                                                    String.valueOf(anchorPosition.y) +
-                                                    String.valueOf(anchorPosition.z));
-                  /*-------------------------------------------------------------------------------*/
-
-                  //attach arFragment to hitResult via anchorNode
-                  anchorNode.setParent(arFragment.getArSceneView().getScene());
-
-                  try {
-                      Config config = new Config(arSceneView.getSession());
-                      config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
-                  } catch (Exception e){
-                      Log.e("getSession",e.getMessage());
-                  }
-
-                  // Create the transformable andy and add it to the anchor.
-                  andy = new TransformableNode(arFragment.getTransformationSystem());
-                  duffel= new TransformableNode(arFragment.getTransformationSystem());
-                  red = new TransformableNode(arFragment.getTransformationSystem());
-                  green = new TransformableNode(arFragment.getTransformationSystem());
-
-                  //choose model orientation based on switch
-                  //checkModel();
-                  setModel();
-
-                  arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
-              });
-
-        
-  }
+    }
 
     private void checkModel() {
         if (toggle.isChecked())
@@ -283,6 +291,30 @@ public class HelloSceneformActivity extends AppCompatActivity {
         duffel.setParent(this.anchorNode);
         duffel.setRenderable(duffelRenderable);
         duffel.select();
+    }
+
+    private void attachPersonalMain() {
+        personalItemRenderable.setShadowCaster(false);
+        personalItem.getScaleController().setEnabled(false);
+        personalItem.setParent(this.anchorNode);
+        personalItem.setRenderable(personalItemRenderable);
+        personalItem.select();
+    }
+
+    private void attachPersonalRed() {
+        personalItemRedRenderable.setShadowCaster(false);
+        personalItemRed.getScaleController().setEnabled(false);
+        personalItemRed.setParent(this.anchorNode);
+        personalItemRed.setRenderable(personalItemRedRenderable);
+        personalItemRed.select();
+    }
+
+    private void attachPersonalGreen() {
+        personalItemGreenRenderable.setShadowCaster(false);
+        personalItemGreen.getScaleController().setEnabled(false);
+        personalItemGreen.setParent(this.anchorNode);
+        personalItemGreen.setRenderable(personalItemGreenRenderable);
+        personalItemGreen.select();
     }
 
     private void attachGreenMain(){
@@ -348,35 +380,26 @@ public class HelloSceneformActivity extends AppCompatActivity {
     }
 
     private void removeAllModels(){
-        //andy.setParent(null);
         andy.setRenderable(null);
-        //duffel.setParent(null);
         duffel.setRenderable(null);
-        //red.setParent(null);
         red.setRenderable(null);
-        //green.setParent(null);
         green.setRenderable(null);
+        personalItem.setRenderable(null);
+        personalItemGreen.setRenderable(null);
+        personalItemRed.setRenderable(null);
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
         frameCount++;
         session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
-        Log.d("onSceneUpdate", String.valueOf(frameCount));
 
             // Let the fragment update its state first.
-            Log.i("onSceneUpdate", "onSceneUpdate");
+
+
             arFragment.onUpdate(frameTime);
-
-
             anchorPosition = anchorNode.getLocalPosition();
-            /*-------------------------------------------------------------------------------*/
-            //Debugging position of placed object
-            String[] pos = new String[3];
-            pos[0] = String.valueOf(anchorPosition.x);
-            pos[1] = String.valueOf(anchorPosition.y);
-            pos[2] = String.valueOf(anchorPosition.z);
-            Log.d("OBJLocationDebug", pos[0] + pos[1] + pos[2]);
-            /*-------------------------------------------------------------------------------*/
+            Log.i("anchorPosition", String.valueOf(anchorPosition));
+
             // If there is no frame then don't process anything.
             if (arFragment.getArSceneView().getArFrame() == null) {
                 return;
@@ -386,31 +409,35 @@ public class HelloSceneformActivity extends AppCompatActivity {
                 return;
             }
 
-            //acquiree feature points
+            //acquire feature points
             Frame frame = arFragment.getArSceneView().getArFrame();
             PointCloud pointCloud = frame.acquirePointCloud();
             FloatBuffer points = pointCloud.getPoints();
             Log.i("pointCloud",String.valueOf(points));
-
-
             Log.i("onSceneUpdate", "prior to sizeCheckObject");
 
         //set as carryon for testing
         sizeCheckObj.setObjectType(false);
+
         sizeCheckObj.setObjectSizeLimits(toggle.isChecked());
         sizeCheckObj.setObjectAnchor(anchorPosition);
+
         Log.d("setObjectAnchor", String.valueOf(anchorPosition));
-        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
+
+
         sizeCheckObj.loadPointsFromFloatBuffer(points);
+        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
+
         sizeCheckObj.comparePointsToLimits();
         int fits = sizeCheckObj.ifObjectFits();
+
         Log.d("onSceneUpdate", "Fits: " + String.valueOf(fits));
         pointCloud.release();
+
         if (frameCount == FRAME_COUNT_THRESH) {
             frameCount = 0;
 
                 //set appropriate colour renderable
-
                 if (returnTrueIfChanged(fits))
                 {
                     switch (fits) {
@@ -432,12 +459,6 @@ public class HelloSceneformActivity extends AppCompatActivity {
                     }
                 }
 
-                /*----------------------------------------------------------------------------------------*/
-                //SizeCheck finds whether object is inside box
-                //Debugging output PointCloud
-//        String x = String.valueOf(points.get());
-//        String y = String.valueOf(points.get());
-//        String z = String.valueOf(points.get());
                 if (fits == 0) {
                     debug_text = "Object Not Detected, Fits: " + fits;
                 } else if (fits == 1) {
