@@ -56,6 +56,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private String debug_text;
 
   //Sceneform Models
+    //Main Carryon
   private ModelRenderable andyRenderable;
   private ModelRenderable duffelRenderable;
   private TransformableNode andy;
@@ -64,6 +65,15 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private ModelRenderable redRenderable;
   private TransformableNode green;
   private TransformableNode red;
+
+  //Personal Item
+  private ModelRenderable personalItemRenderable;
+  private TransformableNode personalItem;
+  private ModelRenderable personalItemGreenRenderable;
+  private TransformableNode personalItemGreen;
+  private ModelRenderable personalItemRedRenderable;
+  private TransformableNode personalItemRed;
+
 
   private int frameCount = 0;
 
@@ -76,7 +86,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private int changeVar = 0;
 
   private sizeCheck sizeCheckObj;
-    private Session session;
+  private Session session;
 
 
     @Override
@@ -91,14 +101,11 @@ public class HelloSceneformActivity extends AppCompatActivity {
         }
         sizeCheckObj = new sizeCheck();
         session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+
       //connect views
       setContentView(R.layout.activity_ux);
-      //connect switch
       toggle = findViewById(R.id.change_duffel);
-
-      //for debugging
       textView = findViewById(R.id.ux_indicatorText);
-
       arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
 
       //Main suitcase object
@@ -157,6 +164,49 @@ public class HelloSceneformActivity extends AppCompatActivity {
                             toast.show();
                             return null;
                         });
+
+        //personal item object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("personalItem.sfb"))
+                .build()
+                .thenAccept(renderable -> personalItemRenderable= renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+
+        //personal item red object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("personalItem_red.sfb"))
+                .build()
+                .thenAccept(renderable -> personalItemRedRenderable= renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+
+        //personal item green object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("personalItem_green.sfb"))
+                .build()
+                .thenAccept(renderable -> personalItemGreenRenderable= renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+
 
       arFragment.setOnTapArPlaneListener(
               (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {

@@ -101,3 +101,18 @@ sceneform.asset('sampledata/models/suitcase_green/suitcase_green.obj',
         'default',
         'sampledata/models/suitcase_green/suitcase_green.sfa',
         'src/main/assets/suitcase_green')
+
+sceneform.asset('sampledata/models/personalItem/personalItem.obj',
+        'default',
+        'sampledata/models/personalItem/personalItem.sfa',
+        'src/main/assets/personalItem')
+
+sceneform.asset('sampledata/models/personalItem_green/personalItem_green.obj',
+        'default',
+        'sampledata/models/personalItem_green/personalItem_green.sfa',
+        'src/main/assets/personalItem_green')
+
+sceneform.asset('sampledata/models/personalItem_red/personalItem_red.obj',
+        'default',
+        'sampledata/models/personalItem_red/personalItem_red.sfa',
+        'src/main/assets/personalItem_red')
