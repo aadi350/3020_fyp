@@ -22,6 +22,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
@@ -50,7 +53,11 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private static final String TAG = HelloSceneformActivity.class.getSimpleName();
   private static final double MIN_OPENGL_VERSION = 3.0;
   private static final int FRAME_COUNT_THRESH = 60;
-  private ArFragment arFragment;
+    private static final int PERSONAL_ID = 2131230837;
+    private static final int CARRYON_ID = 2131230835;
+    private static final int DUFFEL_ID = 2131230836;
+
+    private ArFragment arFragment;
   private ArSceneView arSceneView;
   private TextView textView;
   private String debug_text;
@@ -58,9 +65,8 @@ public class HelloSceneformActivity extends AppCompatActivity {
   //Sceneform Models
     //Main Carryon
   private ModelRenderable andyRenderable;
-  private ModelRenderable duffelRenderable;
   private TransformableNode andy;
-  private TransformableNode duffel;
+
   private ModelRenderable greenRenderable;
   private ModelRenderable redRenderable;
   private TransformableNode green;
@@ -74,19 +80,29 @@ public class HelloSceneformActivity extends AppCompatActivity {
   private ModelRenderable personalItemRedRenderable;
   private TransformableNode personalItemRed;
 
+  private TransformableNode duffel;
+  private ModelRenderable duffelRenderable;
+  private TransformableNode duffelGreen;
+  private ModelRenderable duffelGreenRenderable;
+  private TransformableNode duffelRed;
+  private ModelRenderable duffelRedRenderable;
 
   private int frameCount = 0;
 
   //local coordinates of placed object anchor
   private Vector3 anchorPosition;
   private boolean placed = false;
-  private sizeCheck SizeCheck;
   private SwitchCompat toggle;
+  private RadioGroup radioGroup;
+  private RadioButton radioPersonal;
+  private RadioButton radioDuffel;
+  private RadioButton radioCarryon;
   private AnchorNode anchorNode;
   private int changeVar = 0;
 
   private sizeCheck sizeCheckObj;
   private Session session;
+
 
 
     @Override
@@ -106,9 +122,21 @@ public class HelloSceneformActivity extends AppCompatActivity {
       setContentView(R.layout.activity_ux);
       toggle = findViewById(R.id.change_duffel);
       textView = findViewById(R.id.ux_indicatorText);
-      arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+      radioGroup = findViewById(R.id.change_type);
+      try {
+          arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+      } catch (NullPointerException n){
+          Log.wtf("arFragment", n.getMessage());
+      }
 
       loadRenderables();
+
+
+      radioPersonal = findViewById(R.id.radio_personal);
+      radioDuffel = findViewById(R.id.radio_duffel);
+      radioCarryon = findViewById(R.id.radio_carryon);
+
+
 
       arFragment.setOnTapArPlaneListener(
               (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
@@ -140,14 +168,50 @@ public class HelloSceneformActivity extends AppCompatActivity {
 
                   // Create the transformable andy and add it to the anchor.
                   andy = new TransformableNode(arFragment.getTransformationSystem());
-                  duffel= new TransformableNode(arFragment.getTransformationSystem());
                   red = new TransformableNode(arFragment.getTransformationSystem());
                   green = new TransformableNode(arFragment.getTransformationSystem());
+                  personalItem = new TransformableNode(arFragment.getTransformationSystem());
+                  personalItemGreen = new TransformableNode(arFragment.getTransformationSystem());
+                  personalItemRed = new TransformableNode(arFragment.getTransformationSystem());
+                  duffel= new TransformableNode(arFragment.getTransformationSystem());
+                  duffelRed = new TransformableNode(arFragment.getTransformationSystem());
+                  duffelGreen = new TransformableNode(arFragment.getTransformationSystem());
 
                   //choose model orientation based on switch
                   setModel();
                   arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
               });
+
+        radioGroup.setOnCheckedChangeListener(
+                (group, checkedId) -> {
+                    Log.d("onCheckedChangeListener", "radioGroup entered");
+                    removeAllModels();
+                    Log.d("onCheckedChangeListener", "models removed");
+
+                    switch (checkedId){
+                        case CARRYON_ID:
+                            //carryon
+                            Log.i("onCheckedChangeListener", "Main Attached");
+                            attachMain();
+                            break;
+                        case DUFFEL_ID:
+                            //duffel
+                            Log.i("onCheckedChangeListener", "Duffel Attached");
+                            attachduffel();
+                            break;
+                        case PERSONAL_ID:
+                            //personal item
+                            Log.i("onCheckedChangeListener", "Personal Attached");
+                            attachPersonalMain();
+                            break;
+                        default:
+                            //carryon
+                            Log.i("onCheckedChangeListener", "Default");
+                            break;
+                    }
+                }
+
+        );
   }
 
     private boolean isRenderableNull(){
@@ -183,6 +247,32 @@ public class HelloSceneformActivity extends AppCompatActivity {
                 .setSource(this, Uri.parse("duffel.sfb"))
                 .build()
                 .thenAccept(renderable -> duffelRenderable = renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+        //Green Duffel Object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("duffel_green.sfb"))
+                .build()
+                .thenAccept(renderable -> duffelGreenRenderable = renderable)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            return null;
+                        });
+        //Red Duffel Object
+        ModelRenderable.builder()
+                .setSource(this, Uri.parse("duffel_red.sfb"))
+                .build()
+                .thenAccept(renderable -> duffelRedRenderable = renderable)
                 .exceptionally(
                         throwable -> {
                             Toast toast =
@@ -277,28 +367,34 @@ public class HelloSceneformActivity extends AppCompatActivity {
 
     private void attachMain() {
         //attach main object
-        andyRenderable.setShadowCaster(false);
-        andy.getScaleController().setEnabled(false);
-        andy.setParent(this.anchorNode);
-        andy.setRenderable(andyRenderable);
-        andy.select();
+        if (anchorNode != null){
+            andyRenderable.setShadowCaster(false);
+            andy.getScaleController().setEnabled(false);
+            andy.setParent(this.anchorNode);
+            andy.setRenderable(andyRenderable);
+            andy.select();
+        }
     }
 
     private void attachduffel() {
-        //attach duffel
-        duffelRenderable.setShadowCaster(false);
-        duffel.getScaleController().setEnabled(false);
-        duffel.setParent(this.anchorNode);
-        duffel.setRenderable(duffelRenderable);
-        duffel.select();
+        if (anchorNode != null) {
+            //attach duffel
+            duffelRenderable.setShadowCaster(false);
+            duffel.getScaleController().setEnabled(false);
+            duffel.setParent(this.anchorNode);
+            duffel.setRenderable(duffelRenderable);
+            duffel.select();
+        }
     }
 
     private void attachPersonalMain() {
-        personalItemRenderable.setShadowCaster(false);
-        personalItem.getScaleController().setEnabled(false);
-        personalItem.setParent(this.anchorNode);
-        personalItem.setRenderable(personalItemRenderable);
-        personalItem.select();
+        if (anchorNode != null) {
+            personalItemRenderable.setShadowCaster(false);
+            personalItem.getScaleController().setEnabled(false);
+            personalItem.setParent(this.anchorNode);
+            personalItem.setRenderable(personalItemRenderable);
+            personalItem.select();
+        }
     }
 
     private void attachPersonalRed() {
@@ -315,6 +411,22 @@ public class HelloSceneformActivity extends AppCompatActivity {
         personalItemGreen.setParent(this.anchorNode);
         personalItemGreen.setRenderable(personalItemGreenRenderable);
         personalItemGreen.select();
+    }
+
+    private void attachDuffelGreen() {
+        duffelGreenRenderable.setShadowCaster(false);
+        duffelGreen.getScaleController().setEnabled(false);
+        duffelGreen.setParent(this.anchorNode);
+        duffelGreen.setRenderable(personalItemGreenRenderable);
+        duffelGreen.select();
+    }
+
+    private void attachDuffelRed() {
+        duffelRedRenderable.setShadowCaster(false);
+        duffelRed.getScaleController().setEnabled(false);
+        duffelRed.setParent(this.anchorNode);
+        duffelRed.setRenderable(personalItemGreenRenderable);
+        duffelRed.select();
     }
 
     private void attachGreenMain(){
@@ -336,65 +448,94 @@ public class HelloSceneformActivity extends AppCompatActivity {
     }
 
     private void setModel() {
+        Log.d("setModel", "entered");
         removeAllModels();
-        attachMain();
-        toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
-
+        int toggleId = radioGroup.getCheckedRadioButtonId();
             removeAllModels();
-            if (isChecked) {
-                attachduffel();
+            switch (toggleId){
+                case PERSONAL_ID:
+                    attachPersonalMain();
+                    break;
+                case DUFFEL_ID:
+                    attachduffel();
+                    break;
+                case CARRYON_ID:
+                    attachMain();
+                    break;
+                default:
+                    attachMain();
+                    break;
             }
-            else {
-                attachMain();
-            }
-        });
+        Log.d("setModel", "exxit");
     }
 
     private void setRedModel() {
             // do something, the isChecked will be
             // true if the switch is in the On position
-            removeAllModels();
-            if (toggle.isChecked()) {
-                //attach duffel
-                attachduffel();
-            }
-            else {
-                //attach main object
+        int toggleId = radioGroup.getCheckedRadioButtonId();
+        removeAllModels();
+        switch (toggleId){
+            case PERSONAL_ID:
+                attachPersonalRed();
+                break;
+            case DUFFEL_ID:
+                attachDuffelRed();
+                break;
+            case CARRYON_ID:
                 attachRedMain();
-            }
+                break;
+            default:
+                attachRedMain();
+                break;
+        }
+        Log.i("setRedModel", String.valueOf(toggleId));
     }
 
     private void setGreenModel() {
 
-            // do something, the isChecked will be
-            // true if the switch is in the On position
-            removeAllModels();
-            if (toggle.isChecked()) {
-                //attach duffel
-                attachduffel();
-            }
-            else {
-                //attach main object
+        // do something, the isChecked will be
+        // true if the switch is in the On position
+        int toggleId = radioGroup.getCheckedRadioButtonId();
+        removeAllModels();
+        switch (toggleId){
+            case PERSONAL_ID:
+                attachPersonalGreen();
+                break;
+            case DUFFEL_ID:
+                attachDuffelGreen();
+                break;
+            case CARRYON_ID:
+                attachRedMain();
+                break;
+            default:
                 attachGreenMain();
-            }
+                break;
+        }
+        Log.i("setGreenModel", String.valueOf(toggleId));
     }
 
     private void removeAllModels(){
-        andy.setRenderable(null);
-        duffel.setRenderable(null);
-        red.setRenderable(null);
-        green.setRenderable(null);
-        personalItem.setRenderable(null);
-        personalItemGreen.setRenderable(null);
-        personalItemRed.setRenderable(null);
+        try{
+            andy.setRenderable(null);
+            red.setRenderable(null);
+            green.setRenderable(null);
+            personalItem.setRenderable(null);
+            personalItemGreen.setRenderable(null);
+            personalItemRed.setRenderable(null);
+            duffel.setRenderable(null);
+            duffelGreen.setRenderable(null);
+            duffelRed.setRenderable(null);
+        } catch (Exception e){
+            Log.e("removeAllModels", e.getMessage());
+        }
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
         frameCount++;
-        session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+        session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
 
             // Let the fragment update its state first.
-
+            Log.i("radioGroup",String.valueOf(radioGroup.getCheckedRadioButtonId()));
 
             arFragment.onUpdate(frameTime);
             anchorPosition = anchorNode.getLocalPosition();
@@ -417,9 +558,16 @@ public class HelloSceneformActivity extends AppCompatActivity {
             Log.i("onSceneUpdate", "prior to sizeCheckObject");
 
         //set as carryon for testing
-        sizeCheckObj.setObjectType(false);
+        sizeCheckObj.setObjectType(
+                            radioPersonal.isChecked(),
+                            radioDuffel.isChecked(),
+                            radioCarryon.isChecked()
+                    );
+        Log.i("radioPersonal", Boolean.toString(radioPersonal.isChecked()));
+        Log.i("radioDuffel", Boolean.toString(radioDuffel.isChecked()));
+        Log.i("radioCarryon", Boolean.toString(radioCarryon.isChecked()));
 
-        sizeCheckObj.setObjectSizeLimits(toggle.isChecked());
+        sizeCheckObj.setObjectSizeLimits();
         sizeCheckObj.setObjectAnchor(anchorPosition);
 
         Log.d("setObjectAnchor", String.valueOf(anchorPosition));

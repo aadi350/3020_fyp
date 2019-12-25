@@ -28,14 +28,11 @@
       android:id="@+id/ux_indicatorText"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginBottom="20dip"
-      android:layout_gravity="center_horizontal|bottom"
-
+      android:layout_marginTop="20dip"
+      android:layout_gravity="center_horizontal|top"
       android:padding="12dip"
-
       android:background="#AA000000"
       android:textColor="#ffffffff"
-
       android:text="" />
 
   <android.support.v7.widget.SwitchCompat
@@ -49,14 +46,42 @@
       android:padding="12dip"
      />
 
-  <android.support.v7.widget.SwitchCompat
 
-      android:id="@+id/change_size"
-      android:theme="@style/SwitchCompatTheme"
+  <RadioGroup
+      android:id="@+id/change_type"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_gravity="start|bottom"
+      android:layout_gravity="center_horizontal|bottom"
       android:layout_marginBottom="20dip"
-      android:padding="12dip"
-      />
+      android:orientation="horizontal"
+      android:padding="12dip">
+
+    <RadioButton
+        android:id="@+id/radio_personal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Personal Item" />
+
+    <RadioButton
+        android:id="@+id/radio_carryon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:checked="true"
+        android:text="Carry-On"
+        android:gravity="center"
+        android:layout_weight="1"/>
+
+    <RadioButton
+        android:id="@+id/radio_duffel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Duffel"
+        android:gravity="center"
+        android:layout_weight="1"/>
+
+  </RadioGroup>
+
 </FrameLayout>

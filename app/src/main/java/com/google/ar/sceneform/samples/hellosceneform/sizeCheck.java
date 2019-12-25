@@ -14,6 +14,8 @@ class sizeCheck {
     private boolean objectWithinBounds  = false;
 
     private boolean duffel = false;
+    private boolean carryon = false;
+    private boolean personal = false;
 
     private final float Z_THRESH = 0.15f;
     //Dimensional limits for carry-on object
@@ -36,13 +38,15 @@ class sizeCheck {
     private boolean bagTypeFalseIfCarryon = false;
 
     private FloatBuffer pointBuffer;
+    private int bagType = 0;
 
 
     //sets type of carry-on item by input argument
-    public void setObjectType(boolean type)
+    public void setObjectType(boolean personal, boolean duffel, boolean carryon)
     {
-        this.bagTypeFalseIfCarryon = type;
-        Log.d("setObjectType", Boolean.toString(bagTypeFalseIfCarryon));
+        this.personal = personal;
+        this.duffel = duffel;
+        this.carryon = carryon;
     }
 
     public void setObjectAnchor(Vector3 anchor)
@@ -138,12 +142,18 @@ class sizeCheck {
                 );
     }
 
-    public void setObjectSizeLimits(boolean duffel)
+    public void setObjectSizeLimits()
     {
-        objectSizeLimits = (bagTypeFalseIfCarryon) ? PERSONAL_LIM : CARRYON_LIM;
-        if (duffel) {
+        if (personal) {
+            objectSizeLimits = PERSONAL_LIM;
+        } if (duffel) {
             objectSizeLimits = CARRYON_LIM_DUFFEL;
+        } if (carryon) {
+            objectSizeLimits = CARRYON_LIM;
+        } else {
+            objectSizeLimits = CARRYON_LIM;
         }
+
 
         Log.d("setObjectSizeLimits",
                     "x: " + objectSizeLimits.x +
