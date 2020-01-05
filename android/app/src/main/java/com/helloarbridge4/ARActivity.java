@@ -37,6 +37,7 @@ import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
 
+
 import java.nio.FloatBuffer;
 
 
@@ -44,9 +45,10 @@ public class ARActivity extends AppCompatActivity {
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final int FRAME_COUNT_THRESH = 60;
-    private static final int PERSONAL_ID = 2131230837;
-    private static final int CARRYON_ID = 2131230835;
-    private static final int DUFFEL_ID = 2131230836;
+
+    private static final int PERSONAL_ID = R.id.radio_personal;
+    private static final int CARRYON_ID = R.id.radio_carryon;
+    private static final int DUFFEL_ID = R.id.radio_duffel;
 
     private ArFragment arFragment;
 
@@ -110,11 +112,7 @@ public class ARActivity extends AppCompatActivity {
 
         //connect views
         setContentView(R.layout.ar_layout);
-        toggle = findViewById(R.id.change_duffel);
-        textView = findViewById(R.id.ux_indicatorText);
         radioGroup = findViewById(R.id.change_type);
-        //connect switch
-        toggle = findViewById(R.id.change_duffel);
         Log.i("ARACT", "OnCreate init");
 
         try {
@@ -130,8 +128,7 @@ public class ARActivity extends AppCompatActivity {
         radioCarryon = findViewById(R.id.radio_carryon);
 
 
-        //for debugging
-        textView = findViewById(R.id.ux_indicatorText);
+
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
 
@@ -154,6 +151,10 @@ public class ARActivity extends AppCompatActivity {
 
                     //horizontal plane detection
                     session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+
+                    arFragment.getPlaneDiscoveryController().hide();
+                    arFragment.getPlaneDiscoveryController().setInstructionView(null);
+                    arFragment.getArSceneView().getPlaneRenderer().setEnabled(false);
 
                     // Create the Anchor at hit result
                     Anchor anchor = hitResult.createAnchor();
@@ -190,7 +191,7 @@ public class ARActivity extends AppCompatActivity {
 
         radioGroup.setOnCheckedChangeListener(
                 (group, checkedId) -> {
-                    Log.d("onCheckedChangeListener", "radioGroup entered");
+                    Log.d("onCheckedChangeListener", String.valueOf(checkedId));
                     removeAllModels();
                     Log.d("onCheckedChangeListener", "models removed");
 
@@ -270,6 +271,7 @@ public class ARActivity extends AppCompatActivity {
         int fits = sizeCheckObj.ifObjectFits();
 
         pointCloud.release();
+        pointCloud.close();
 
         if (frameCount == FRAME_COUNT_THRESH) {
             frameCount = 0;
@@ -298,7 +300,7 @@ public class ARActivity extends AppCompatActivity {
                         break;
                 }
             }
-            textView.setText(fits);
+
         }
     }
 

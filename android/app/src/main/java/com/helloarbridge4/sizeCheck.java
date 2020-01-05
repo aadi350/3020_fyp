@@ -82,6 +82,7 @@ class sizeCheck {
 
     public void comparePointsToLimits()
     {
+        float confidence = 0.0f;
         Log.d("comparePointsToLimits","entered  ");
         try {
             do {
@@ -91,7 +92,7 @@ class sizeCheck {
                         pointBuffer.get()
                 );
                 //confidence score
-                pointBuffer.get();
+                confidence = pointBuffer.get();
 
                 pointLocationRelativeToCorner = Vector3.subtract(pointLocationAbsolute,objectCorner);
 
