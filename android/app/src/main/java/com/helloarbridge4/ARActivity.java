@@ -68,110 +68,102 @@ public class ARActivity extends AppCompatActivity {
             super.onCreate(savedInstanceState);
 
             setContentView(R.layout.ar_layout);
-            initFragment();
+
+
 
             radioGroup = findViewById(R.id.change_type);
             onScreenText = findViewById(R.id.onScreenText);
             removeObjects = findViewById(R.id.removeObjects);
+            initFragment();
 
-
-            initSession();
-
-            try {
-                arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
-            } catch (NullPointerException n){
-                Log.wtf("arFragment", n.getMessage());
-            }
-
-              if (!checkIsSupportedDeviceOrFinish(this)) {
+            if (!checkIsSupportedDeviceOrFinish(this)) {
                 return;
             }
+
+            initSession();
 
             sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
 
             arFragment.setOnTapArPlaneListener(
                     (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-    //                    if (isRenderableNull() || placed) {
-    //                        Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
-    //                        return;
-    //                    }
-
-                        // Create the Anchor at hit result
-                        Anchor anchor = hitResult.createAnchor();
-                        anchorNode = new AnchorNode(anchor);
-                        anchorPosition = anchorNode.getLocalPosition();
-
-                        //attach arFragment to hitResult via anchorNode
-                        anchorNode.setParent(arFragment.getArSceneView().getScene());
-
-                        try {
-                            //disable plane detection
-                            config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
-                        } catch (Exception e){
-                            Log.e("getSession",e.getMessage());
-                        }
-
-                        try {
-                            node = new TransformableNode(arFragment.getTransformationSystem());
-
-                        } catch (Exception e){
-                            Log.d(TAG, "objectHandler: " + e.getMessage());
-                        }
-                        setModel();
-
+                        initAnchor(hitResult);
+                        disablePlaneDetection(config);
+                        createNode(arFragment);
+                        setModel(radioGroup.getCheckedRadioButtonId());
                     });
 
             arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
 
             radioGroup.setOnCheckedChangeListener(
                     (group, checkedId) -> {
-                        removeAllModels();
-                        switch (checkedId){
-                            case CARRYON_ID: attachMain();
-                                break;
-                            case DUFFEL_ID: attachduffel();
-                                break;
-                            case PERSONAL_ID: attachPersonalMain();
-                                break;
-                            default:
-                                break;
-                        }
+                        setModel(checkedId);
                     }
 
             );
 
             removeObjects.setOnClickListener(
                     w -> {
-                        Log.d(TAG,"onClick()");
                         node.setRenderable(null);
-                        radioGroup.clearCheck();
+                        radioGroup.check(R.id.radio_carryon);
                     }
             );
     }
 
+    private void createNode(ArFragment arFragment) {
+        try {
+            node = new TransformableNode(arFragment.getTransformationSystem());
+        } catch (Exception e){
+            Log.d(TAG, "objectHandler: " + e.getMessage());
+        }
+    }
+
+    private void disablePlaneDetection(Config config) {
+        try {
+            //disable plane detection
+            config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+        } catch (Exception e){
+            Log.e("getSession",e.getMessage());
+        }
+    }
+
+    private void initAnchor(HitResult hitResult) {
+        // Create the Anchor at hit result
+        Anchor anchor = hitResult.createAnchor();
+        anchorNode = new AnchorNode(anchor);
+        anchorPosition = anchorNode.getLocalPosition();
+        //attach arFragment to hitResult via anchorNode
+        anchorNode.setParent(arFragment.getArSceneView().getScene());
+    }
+
     private void initFragment() {
-        try{
+        try {
             arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
             scene = arFragment.getArSceneView().getScene();
-        } catch (NullPointerException e) {
-            Log.e("onCreate", e.getMessage());
+            //arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
+        } catch (NullPointerException n){
+            Log.wtf("arFragment", n.getMessage());
         }
+
+
     }
 
     private void initSession() {
         try{
             session = new Session(this);
             config = new Config(session);
-            config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+            horizontalPlaneDetection(config);
         } catch (Exception e) {
             Log.e(TAG, "session: " + e.getMessage());
         }
     }
 
+    private void horizontalPlaneDetection(Config config) {
+        config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+    }
+
     private void onSceneUpdate(FrameTime frameTime) {
         arFragment.onUpdate(frameTime);
-        Config config = new Config(session);
-        config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+        disablePlaneDetection(config);
 
         // If there is no frame then don't process anything.
         if (arFragment.getArSceneView().getArFrame() == null) {
@@ -182,52 +174,41 @@ public class ARActivity extends AppCompatActivity {
             return;
         }
 
-        Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
-
         try {
-            Frame frame = arFragment.getArSceneView().getArFrame();
-            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
-                if (plane != null || node.getRenderable() == null) {
-                    onScreenText.setText(R.string.planeDetected);
-                } if(node.getRenderable() != null) {
-                    onScreenText.setText(R.string.objectPlaced);
-                }else {
-                    onScreenText.setText(R.string.planeNotDetected);
-                }
-            }
+            setOnScreenText(arFragment);
         } catch (NullPointerException e) {
             Log.e(TAG, "planeDetection: " + e.getMessage());
         }
-//        PointCloud pointCloud =  frame.acquirePointCloud();
-//        FloatBuffer points =  pointCloud.getPoints();
-//        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
-//        pointCloud.close();
     }
 
-    private boolean isRenderableNull(){
-        //TO-DO
-        //replace with ObjectHandler call
-      return false;
+    private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
+        Frame frame = arFragment.getArSceneView().getArFrame();
+        for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
+            if (plane != null || node.getRenderable() == null) {
+                onScreenText.setText(R.string.planeDetected);
+            } if(node.getRenderable() != null) {
+                onScreenText.setText(R.string.objectPlaced);
+            }else {
+                onScreenText.setText(R.string.planeNotDetected);
+            }
+        }
     }
-
-
 
     private void attachMain() {
-        if (anchorNode != null){
-            sceneFormObjectHandler.setCarryOnNeutral(anchorNode, node);
-        }
+        if (anchorNode == null) return;
+        sceneFormObjectHandler.setCarryOnNeutral(anchorNode, node);
+
     }
 
     private void attachduffel() {
-        if (anchorNode != null) {
-            sceneFormObjectHandler.setDuffelNeutral(anchorNode, node);
-        }
+        if (anchorNode == null) return;
+        sceneFormObjectHandler.setDuffelNeutral(anchorNode, node);
+
     }
 
     private void attachPersonalMain() {
-        if (anchorNode != null) {
-            sceneFormObjectHandler.setPersonalItemNeutral(anchorNode,node);
-        }
+        if (anchorNode == null) return;
+        sceneFormObjectHandler.setPersonalItemNeutral(anchorNode,node);
     }
 
     private void attachPersonalRed() {
@@ -254,10 +235,8 @@ public class ARActivity extends AppCompatActivity {
         //TO-DO
     }
 
-    private void setModel() {
-        Log.d("setModel", "entered");
+    private void setModel(int toggleId) {
         removeAllModels();
-        int toggleId = radioGroup.getCheckedRadioButtonId();
         switch (toggleId){
             case PERSONAL_ID:
                 attachPersonalMain();
