@@ -87,8 +87,6 @@ public class ObjectHandler {
         personalItemBuilder.getFits().select(anchorNode,transformableNode);
     }
 
-
-
     public void removeAll(TransformableNode node) {
         if (node == null) {
             return;
@@ -105,7 +103,4 @@ public class ObjectHandler {
         duffelBuilder.getLarge().unSelect(node);
         personalItemBuilder.getLarge().unSelect(node);
     }
-
-
-
 }
