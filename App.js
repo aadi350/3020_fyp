@@ -7,6 +7,7 @@
 import React, { Component } from 'react';
 import {
   Button,
+  Image,
   Platform,
   StyleSheet,
   Text,
@@ -31,19 +32,41 @@ export default class App extends Component<Props> {
   render() {
     return (
       <View style={styles.container}>
-        <Button title={"Invoke Native Code"} onPress={ this.launchExternal }>
+         <Image
+          style={{width: 240, height: 100, marginBottom:0}}
+          source={require('./black_cal_logo.png')}
+        />
+
+        <Text style={styles.titleText}>
+          AR Baggage Measure
+        </Text>
+
+        <Button title={"Launch AR"} onPress={ this.launchExternal } style={styles.buttonStyle}>
               <Text>Invoke native Java code</Text>
          </Button>
+         
       </View>
     );
   }
 }
- 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
-  }
+  },
+  titleText: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: 'grey',
+    marginBottom: 40,
+    fontSize: 30,
+    fontFamily: 'Roboto'
+
+  },
+  buttonStyle: {
+    backgroundColor: '#FFFFFF'
+  },
 });
