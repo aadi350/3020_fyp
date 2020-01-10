@@ -15,13 +15,6 @@ public abstract class objectBuilder extends AppCompatActivity {
 
     public abstract void initBuilder(Context context);
 
-//    public abstract SceneFormObject getFits();
-//    public abstract SceneFormObject getLarge();
-//    public abstract SceneFormObject getNeutral();
-//
-//    protected abstract void buildRed();
-//    protected abstract void buildNeutral();
-//    protected abstract void buildGreen();
 
     public SceneFormObject getFits() {
         buildGreen();
