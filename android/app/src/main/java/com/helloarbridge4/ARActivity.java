@@ -143,8 +143,6 @@ public class ARActivity extends AppCompatActivity {
         } catch (NullPointerException n){
             Log.wtf("arFragment", n.getMessage());
         }
-
-
     }
 
     private void initSession() {
@@ -197,13 +195,11 @@ public class ARActivity extends AppCompatActivity {
     private void attachMain() {
         if (anchorNode == null) return;
         sceneFormObjectHandler.setCarryOnNeutral(anchorNode, node);
-
     }
 
     private void attachduffel() {
         if (anchorNode == null) return;
         sceneFormObjectHandler.setDuffelNeutral(anchorNode, node);
-
     }
 
     private void attachPersonalMain() {
@@ -212,7 +208,7 @@ public class ARActivity extends AppCompatActivity {
     }
 
     private void attachPersonalRed() {
-        //TO-DO
+       //TO-DO
     }
 
     private void attachPersonalGreen() {

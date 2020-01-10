@@ -32,12 +32,62 @@ public class ObjectHandler {
     }
 
     public void setDuffelNeutral(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
         duffelBuilder.getNeutral().select(anchorNode, transformableNode);
     }
 
     public void setPersonalItemNeutral(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
         personalItemBuilder.getNeutral().select(anchorNode,transformableNode);
     }
+
+    public void setCarryOnLarge(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
+        carryOnBuilder.getLarge().select(anchorNode,transformableNode);
+    }
+
+    public void setDuffelLarge(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
+        duffelBuilder.getLarge().select(anchorNode,transformableNode);
+    }
+
+    public void setPersonalItemLarge(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
+        personalItemBuilder.getLarge().select(anchorNode,transformableNode);
+    }
+
+    public void setCarryOnFits(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
+        carryOnBuilder.getFits().select(anchorNode,transformableNode);
+    }
+
+    public void setDuffelOnFits(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
+        duffelBuilder.getFits().select(anchorNode,transformableNode);
+    }
+
+    public void setPersonalItemFits(AnchorNode anchorNode, TransformableNode transformableNode) {
+        if (anchorNode == null ||  transformableNode == null) {
+            return;
+        }
+        personalItemBuilder.getFits().select(anchorNode,transformableNode);
+    }
+
+
 
     public void removeAll(TransformableNode node) {
         if (node == null) {
