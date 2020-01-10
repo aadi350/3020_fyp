@@ -53,10 +53,8 @@ public class ARActivity extends AppCompatActivity {
 
     //local coordinates of placed object anchor
     private Vector3 anchorPosition;
-    private boolean placed = false;
     private RadioGroup radioGroup;
     private AnchorNode anchorNode;
-    private int changeVar = 0;
 
     private Session session;
     private Config config;
@@ -102,7 +100,6 @@ public class ARActivity extends AppCompatActivity {
                         Anchor anchor = hitResult.createAnchor();
                         anchorNode = new AnchorNode(anchor);
                         anchorPosition = anchorNode.getLocalPosition();
-                        placed = true;
 
                         //attach arFragment to hitResult via anchorNode
                         anchorNode.setParent(arFragment.getArSceneView().getScene());
@@ -257,8 +254,6 @@ public class ARActivity extends AppCompatActivity {
         //TO-DO
     }
 
-
-
     private void setModel() {
         Log.d("setModel", "entered");
         removeAllModels();
@@ -280,67 +275,12 @@ public class ARActivity extends AppCompatActivity {
         Log.d("setModel", "exxit");
     }
 
-    private void setRedModel() {
-        int toggleId = radioGroup.getCheckedRadioButtonId();
-        removeAllModels();
-        switch (toggleId){
-            case PERSONAL_ID:
-                attachPersonalRed();
-                break;
-            case DUFFEL_ID:
-                attachDuffelRed();
-                break;
-            case CARRYON_ID:
-                attachRedMain();
-                break;
-            default:
-                attachRedMain();
-                break;
-        }
-        Log.i("setRedModel", String.valueOf(toggleId));
-    }
-
-    private void setGreenModel() {
-
-        // do something, the isChecked will be
-        // true if the switch is in the On position
-        int toggleId = radioGroup.getCheckedRadioButtonId();
-        removeAllModels();
-        switch (toggleId){
-            case PERSONAL_ID:
-                attachPersonalGreen();
-                break;
-            case DUFFEL_ID:
-                attachDuffelGreen();
-                break;
-            case CARRYON_ID:
-                attachRedMain();
-                break;
-            default:
-                attachGreenMain();
-                break;
-        }
-        Log.i("setGreenModel", String.valueOf(toggleId));
-    }
-
     private void removeAllModels(){
         try{
             node.setRenderable(null);
         } catch (Exception e){
             Log.e("removeAllModels", e.getMessage());
         }
-    }
-
-    private boolean returnTrueIfChanged(int i) {
-        if (this.changeVar == i) {
-            return false;
-        }
-        this.changeVar = i;
-        return true;
-    }
-
-    private void connectViews() {
-
     }
 
     //API Required Calls
