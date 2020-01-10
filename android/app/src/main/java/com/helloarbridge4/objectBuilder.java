@@ -10,6 +10,7 @@ public abstract class objectBuilder extends AppCompatActivity {
 
     //TO-DO
     //implement SceneFormObject class
+    //implement ObjectBuilder classes
     //protected SceneFormObject object;
 
     public abstract void initBuilder(Context context);
