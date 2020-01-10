@@ -1,7 +1,6 @@
 package com.helloarbridge4;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -13,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.widget.ImageButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Switch;
@@ -44,13 +44,14 @@ import java.nio.FloatBuffer;
 public class ARActivity extends AppCompatActivity {
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
-    private static final int FRAME_COUNT_THRESH = 60;
+    private static final int FRAME_COUNT_THRESH = 15;
 
     private static final int PERSONAL_ID = R.id.radio_personal;
     private static final int CARRYON_ID = R.id.radio_carryon;
     private static final int DUFFEL_ID = R.id.radio_duffel;
 
     private ArFragment arFragment;
+    private ImageButton removeObjects;
 
     //Main suitcase
     private TransformableNode andy;
@@ -95,25 +96,31 @@ public class ARActivity extends AppCompatActivity {
 
     private sizeCheck sizeCheckObj;
     private Session session;
+    private Config config;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d("ARActivity","onCreate");
+
+        Intent intent = getIntent();
+        String message = intent.getStringExtra(MainActivity.REQ_MSG);
+
         super.onCreate(savedInstanceState);
 
         try{
             session = new Session(this);
+            config = new Config(session);
+            config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+            Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
         } catch (Exception e) {
             Log.e("session", e.getMessage());
         }
 
         sizeCheckObj = new sizeCheck();
-        session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+
 
         //connect views
         setContentView(R.layout.ar_layout);
         radioGroup = findViewById(R.id.change_type);
-        Log.i("ARACT", "OnCreate init");
 
         try {
             arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
@@ -127,19 +134,12 @@ public class ARActivity extends AppCompatActivity {
         radioDuffel = findViewById(R.id.radio_duffel);
         radioCarryon = findViewById(R.id.radio_carryon);
 
-
-
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
-
-
-        Intent intent = getIntent();
-        String message = intent.getStringExtra(MainActivity.REQ_MSG);
 
         if (!checkIsSupportedDeviceOrFinish(this)) {
             return;
         }
-
 
         arFragment.setOnTapArPlaneListener(
                 (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
@@ -148,13 +148,8 @@ public class ARActivity extends AppCompatActivity {
                         return;
                     }
                     Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
+                    Log.d("planeFindingMode","onTap");
 
-                    //horizontal plane detection
-                    session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
-
-                    arFragment.getPlaneDiscoveryController().hide();
-                    arFragment.getPlaneDiscoveryController().setInstructionView(null);
-                    arFragment.getArSceneView().getPlaneRenderer().setEnabled(false);
 
                     // Create the Anchor at hit result
                     Anchor anchor = hitResult.createAnchor();
@@ -167,8 +162,9 @@ public class ARActivity extends AppCompatActivity {
                     anchorNode.setParent(arFragment.getArSceneView().getScene());
 
                     try {
-                        Config config = new Config(arSceneView.getSession());
-                        config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+                        //disable plane detection
+                        config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+                        Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
                     } catch (Exception e){
                         Log.e("getSession",e.getMessage());
                     }
@@ -185,6 +181,7 @@ public class ARActivity extends AppCompatActivity {
                     duffelGreen = new TransformableNode(arFragment.getTransformationSystem());
 
                     //choose model orientation based on switch
+
                     setModel();
                     arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
                 });
@@ -219,11 +216,20 @@ public class ARActivity extends AppCompatActivity {
                 }
 
         );
+
+        removeObjects.setOnClickListener(
+                w -> {
+                    Log.d(TAG,"onClick()");
+                    //Implement Method
+                    //removeObjects();
+                }
+        );
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
         frameCount++;
-        session.getConfig().setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+        Config config = new Config(session);
+        config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
 
         // Let the fragment update its state first.
         Log.i("radioGroup",String.valueOf(radioGroup.getCheckedRadioButtonId()));
@@ -241,10 +247,14 @@ public class ARActivity extends AppCompatActivity {
             return;
         }
 
+        Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
+
         //acquire feature points
         Frame frame = arFragment.getArSceneView().getArFrame();
-        PointCloud pointCloud = frame.acquirePointCloud();
-        FloatBuffer points = pointCloud.getPoints();
+        PointCloud pointCloud = null;
+        pointCloud = frame.acquirePointCloud();
+        FloatBuffer points = null;
+        points = pointCloud.getPoints();
         Log.i("pointCloud",String.valueOf(points));
         Log.i("onSceneUpdate", "prior to sizeCheckObject");
 
@@ -270,7 +280,7 @@ public class ARActivity extends AppCompatActivity {
         sizeCheckObj.comparePointsToLimits();
         int fits = sizeCheckObj.ifObjectFits();
 
-        pointCloud.release();
+
         pointCloud.close();
 
         if (frameCount == FRAME_COUNT_THRESH) {
