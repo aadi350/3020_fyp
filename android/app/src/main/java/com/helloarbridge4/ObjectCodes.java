@@ -1,6 +1,6 @@
 package com.helloarbridge4;
 
-enum ObjectCodes {
+public enum ObjectCodes {
     FITS_PERSONAL,
     FITS_CARRYON,
     FITS_DUFFEL,
