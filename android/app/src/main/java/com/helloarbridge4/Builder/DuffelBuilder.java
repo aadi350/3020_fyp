@@ -1,4 +1,4 @@
-package com.helloarbridge4;
+package com.helloarbridge4.Builder;
 
 import android.content.Context;
 
@@ -10,5 +10,7 @@ public class DuffelBuilder extends objectBuilder {
 
 
         this.context = context;
+        buildAll();
+
     }
 }

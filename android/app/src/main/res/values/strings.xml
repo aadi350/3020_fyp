@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">HelloARBridge4</string>
+    <string name="promptText">Point your device at place on the floor with good lighting and without objects that may get in the way</string>
+    <string name="detectText">We have detected a suitable area. Touch the screen to place the suitcase</string>
+    <string name="personal_item">Personal Item</string>
+    <string name="carry_on">Carry-On</string>
+    <string name="duffel">Duffel</string>
+    <string name="objectPlaced"><b>Place your baggage</b> inside the virtual box to compare their sizes. You can move the box with one finger, and rotate with two</string>
+    <string name="planeDetected"><b>Tap</b> to place your virtual object</string>
+    <string name="planeNotDetected">Point your device at place on the floor with good lighting and without objects that may get in the way</string>
 </resources>

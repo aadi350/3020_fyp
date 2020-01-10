@@ -1,4 +1,4 @@
-package com.helloarbridge4;
+package com.helloarbridge4.Builder;
 
 import android.content.Context;
 
@@ -10,5 +10,6 @@ public class CarryOnBuilder extends objectBuilder {
 
 
         this.context = context;
+        buildAll();
     }
 }

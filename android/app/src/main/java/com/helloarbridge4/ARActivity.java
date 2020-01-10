@@ -6,16 +6,12 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.widget.ImageButton;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,21 +20,17 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
-import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
+import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
-import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
-
-
-import java.nio.FloatBuffer;
+import com.helloarbridge4.Object.ObjectHandler;
 
 
 public class ARActivity extends AppCompatActivity {
@@ -52,191 +44,137 @@ public class ARActivity extends AppCompatActivity {
 
     private ArFragment arFragment;
     private ImageButton removeObjects;
+    private TextView onScreenText;
 
-    //Main suitcase
-    private TransformableNode andy;
-    private ModelRenderable andyRenderable;
-    private ModelRenderable greenRenderable;
-    private ModelRenderable redRenderable;
-    private TransformableNode green;
-    private TransformableNode red;
-
-
-    //Personal Item
-    private ModelRenderable personalItemRenderable;
-    private TransformableNode personalItem;
-    private ModelRenderable personalItemGreenRenderable;
-    private TransformableNode personalItemGreen;
-    private ModelRenderable personalItemRedRenderable;
-    private TransformableNode personalItemRed;
-
-    //duffel
-    private TransformableNode duffel;
-    private ModelRenderable duffelRenderable;
-    private TransformableNode duffelGreen;
-    private ModelRenderable duffelGreenRenderable;
-    private TransformableNode duffelRed;
-    private ModelRenderable duffelRedRenderable;
-
-    private ArSceneView arSceneView;
-    private TextView textView;
+    private ObjectHandler sceneFormObjectHandler;
+    private TransformableNode node;
 
     private int frameCount = 0;
 
     //local coordinates of placed object anchor
     private Vector3 anchorPosition;
     private boolean placed = false;
-    private Switch toggle;
     private RadioGroup radioGroup;
-    private RadioButton radioPersonal;
-    private RadioButton radioDuffel;
-    private RadioButton radioCarryon;
     private AnchorNode anchorNode;
     private int changeVar = 0;
 
-    private sizeCheck sizeCheckObj;
     private Session session;
     private Config config;
+    private Scene scene;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+            //RN Bridge
+            Intent intent = getIntent();
+            String message = intent.getStringExtra(MainActivity.REQ_MSG);
+            super.onCreate(savedInstanceState);
 
-        Intent intent = getIntent();
-        String message = intent.getStringExtra(MainActivity.REQ_MSG);
+            setContentView(R.layout.ar_layout);
+            initFragment();
 
-        super.onCreate(savedInstanceState);
+            radioGroup = findViewById(R.id.change_type);
+            onScreenText = findViewById(R.id.onScreenText);
+            removeObjects = findViewById(R.id.removeObjects);
 
+
+            initSession();
+
+            try {
+                arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
+            } catch (NullPointerException n){
+                Log.wtf("arFragment", n.getMessage());
+            }
+
+              if (!checkIsSupportedDeviceOrFinish(this)) {
+                return;
+            }
+
+            sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
+
+            arFragment.setOnTapArPlaneListener(
+                    (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
+    //                    if (isRenderableNull() || placed) {
+    //                        Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
+    //                        return;
+    //                    }
+
+                        // Create the Anchor at hit result
+                        Anchor anchor = hitResult.createAnchor();
+                        anchorNode = new AnchorNode(anchor);
+                        anchorPosition = anchorNode.getLocalPosition();
+                        placed = true;
+
+                        //attach arFragment to hitResult via anchorNode
+                        anchorNode.setParent(arFragment.getArSceneView().getScene());
+
+                        try {
+                            //disable plane detection
+                            config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+                        } catch (Exception e){
+                            Log.e("getSession",e.getMessage());
+                        }
+
+                        try {
+                            node = new TransformableNode(arFragment.getTransformationSystem());
+
+                        } catch (Exception e){
+                            Log.d(TAG, "objectHandler: " + e.getMessage());
+                        }
+                        setModel();
+
+                    });
+
+            arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
+
+            radioGroup.setOnCheckedChangeListener(
+                    (group, checkedId) -> {
+                        removeAllModels();
+                        switch (checkedId){
+                            case CARRYON_ID: attachMain();
+                                break;
+                            case DUFFEL_ID: attachduffel();
+                                break;
+                            case PERSONAL_ID: attachPersonalMain();
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+            );
+
+            removeObjects.setOnClickListener(
+                    w -> {
+                        Log.d(TAG,"onClick()");
+                        node.setRenderable(null);
+                        radioGroup.clearCheck();
+                    }
+            );
+    }
+
+    private void initFragment() {
+        try{
+            arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+            scene = arFragment.getArSceneView().getScene();
+        } catch (NullPointerException e) {
+            Log.e("onCreate", e.getMessage());
+        }
+    }
+
+    private void initSession() {
         try{
             session = new Session(this);
             config = new Config(session);
             config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
-            Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
         } catch (Exception e) {
-            Log.e("session", e.getMessage());
+            Log.e(TAG, "session: " + e.getMessage());
         }
-
-        sizeCheckObj = new sizeCheck();
-
-
-        //connect views
-        setContentView(R.layout.ar_layout);
-        radioGroup = findViewById(R.id.change_type);
-
-        try {
-            arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        } catch (NullPointerException n){
-            Log.wtf("arFragment", n.getMessage());
-        }
-
-        loadRenderables();
-
-        radioPersonal = findViewById(R.id.radio_personal);
-        radioDuffel = findViewById(R.id.radio_duffel);
-        radioCarryon = findViewById(R.id.radio_carryon);
-
-        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
-
-        if (!checkIsSupportedDeviceOrFinish(this)) {
-            return;
-        }
-
-        arFragment.setOnTapArPlaneListener(
-                (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                    if (isRenderableNull() || placed) {
-                        Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
-                        return;
-                    }
-                    Log.d("renderableNull: ", String.valueOf(isRenderableNull()));
-                    Log.d("planeFindingMode","onTap");
-
-
-                    // Create the Anchor at hit result
-                    Anchor anchor = hitResult.createAnchor();
-                    placed = true;
-
-                    anchorNode = new AnchorNode(anchor);
-                    anchorPosition = anchorNode.getLocalPosition();
-
-                    //attach arFragment to hitResult via anchorNode
-                    anchorNode.setParent(arFragment.getArSceneView().getScene());
-
-                    try {
-                        //disable plane detection
-                        config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
-                        Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
-                    } catch (Exception e){
-                        Log.e("getSession",e.getMessage());
-                    }
-
-                    // Create the transformable andy and add it to the anchor.
-                    andy = new TransformableNode(arFragment.getTransformationSystem());
-                    red = new TransformableNode(arFragment.getTransformationSystem());
-                    green = new TransformableNode(arFragment.getTransformationSystem());
-                    personalItem = new TransformableNode(arFragment.getTransformationSystem());
-                    personalItemGreen = new TransformableNode(arFragment.getTransformationSystem());
-                    personalItemRed = new TransformableNode(arFragment.getTransformationSystem());
-                    duffel= new TransformableNode(arFragment.getTransformationSystem());
-                    duffelRed = new TransformableNode(arFragment.getTransformationSystem());
-                    duffelGreen = new TransformableNode(arFragment.getTransformationSystem());
-
-                    //choose model orientation based on switch
-
-                    setModel();
-                    arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
-                });
-
-        radioGroup.setOnCheckedChangeListener(
-                (group, checkedId) -> {
-                    Log.d("onCheckedChangeListener", String.valueOf(checkedId));
-                    removeAllModels();
-                    Log.d("onCheckedChangeListener", "models removed");
-
-                    switch (checkedId){
-                        case CARRYON_ID:
-                            //carryon
-                            Log.i("onCheckedChangeListener", "Main Attached");
-                            attachMain();
-                            break;
-                        case DUFFEL_ID:
-                            //duffel
-                            Log.i("onCheckedChangeListener", "Duffel Attached");
-                            attachduffel();
-                            break;
-                        case PERSONAL_ID:
-                            //personal item
-                            Log.i("onCheckedChangeListener", "Personal Attached");
-                            attachPersonalMain();
-                            break;
-                        default:
-                            //carryon
-                            Log.i("onCheckedChangeListener", "Default");
-                            break;
-                    }
-                }
-
-        );
-
-        removeObjects.setOnClickListener(
-                w -> {
-                    Log.d(TAG,"onClick()");
-                    //Implement Method
-                    //removeObjects();
-                }
-        );
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
-        frameCount++;
+        arFragment.onUpdate(frameTime);
         Config config = new Config(session);
         config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
-
-        // Let the fragment update its state first.
-        Log.i("radioGroup",String.valueOf(radioGroup.getCheckedRadioButtonId()));
-
-        arFragment.onUpdate(frameTime);
-        anchorPosition = anchorNode.getLocalPosition();
-        Log.i("anchorPosition", String.valueOf(anchorPosition));
 
         // If there is no frame then don't process anything.
         if (arFragment.getArSceneView().getArFrame() == null) {
@@ -249,309 +187,82 @@ public class ARActivity extends AppCompatActivity {
 
         Log.d("planeFindingMode", config.getPlaneFindingMode().toString());
 
-        //acquire feature points
-        Frame frame = arFragment.getArSceneView().getArFrame();
-        PointCloud pointCloud = null;
-        pointCloud = frame.acquirePointCloud();
-        FloatBuffer points = null;
-        points = pointCloud.getPoints();
-        Log.i("pointCloud",String.valueOf(points));
-        Log.i("onSceneUpdate", "prior to sizeCheckObject");
-
-        //set as carryon for testing
-        sizeCheckObj.setObjectType(
-                radioPersonal.isChecked(),
-                radioDuffel.isChecked(),
-                radioCarryon.isChecked()
-        );
-        Log.i("radioPersonal", Boolean.toString(radioPersonal.isChecked()));
-        Log.i("radioDuffel", Boolean.toString(radioDuffel.isChecked()));
-        Log.i("radioCarryon", Boolean.toString(radioCarryon.isChecked()));
-
-        sizeCheckObj.setObjectSizeLimits();
-        sizeCheckObj.setObjectAnchor(anchorPosition);
-
-        Log.d("setObjectAnchor", String.valueOf(anchorPosition));
-
-
-        sizeCheckObj.loadPointsFromFloatBuffer(points);
-        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
-
-        sizeCheckObj.comparePointsToLimits();
-        int fits = sizeCheckObj.ifObjectFits();
-
-
-        pointCloud.close();
-
-        if (frameCount == FRAME_COUNT_THRESH) {
-            frameCount = 0;
-
-            //set appropriate colour renderable
-            if (returnTrueIfChanged(fits))
-            {
-                switch (fits) {
-                    case 0:
-                        //No Object Detected
-                        setModel();
-                        Log.d("OBJ_DETECT","Object Not Detected, Fits: " + fits);
-                        break;
-                    case 1:
-                        //Oversized object detected
-                        setRedModel();
-                        Log.d("OBJ_DETECT","Large Object Detected, Fits: " + fits);
-                        break;
-                    case 2:
-                        //Object detected within bounds
-                        setGreenModel();
-                        Log.d("OBJ_DETECT","Object Detected, Fits: " + fits);
-                        break;
-                    default:
-                        removeAllModels();
-                        break;
+        try {
+            Frame frame = arFragment.getArSceneView().getArFrame();
+            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
+                if (plane != null || node.getRenderable() == null) {
+                    onScreenText.setText(R.string.planeDetected);
+                } if(node.getRenderable() != null) {
+                    onScreenText.setText(R.string.objectPlaced);
+                }else {
+                    onScreenText.setText(R.string.planeNotDetected);
                 }
             }
-
+        } catch (NullPointerException e) {
+            Log.e(TAG, "planeDetection: " + e.getMessage());
         }
+//        PointCloud pointCloud =  frame.acquirePointCloud();
+//        FloatBuffer points =  pointCloud.getPoints();
+//        Log.i("onSceneUpdate", "loadPointsFromFloatBuffer");
+//        pointCloud.close();
     }
 
     private boolean isRenderableNull(){
-        return (
-                andyRenderable == null ||
-                        duffelRenderable == null ||
-                        greenRenderable == null ||
-                        redRenderable == null ||
-                        personalItemRenderable == null ||
-                        personalItemGreenRenderable == null ||
-                        personalItemRedRenderable == null
-        );
+        //TO-DO
+        //replace with ObjectHandler call
+      return false;
     }
 
-    private void loadRenderables(){
-        //Main suitcase object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("suitcase.sfb"))
-                .build()
-                .thenAccept(renderable -> andyRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
 
-
-        //main Duffel Object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("duffel.sfb"))
-                .build()
-                .thenAccept(renderable -> duffelRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-        //Green Duffel Object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("duffel_green.sfb"))
-                .build()
-                .thenAccept(renderable -> duffelGreenRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-        //Red Duffel Object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("duffel_red.sfb"))
-                .build()
-                .thenAccept(renderable -> duffelRedRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-
-        //green suitcase object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("suitcase_green.sfb"))
-                .build()
-                .thenAccept(renderable -> greenRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-
-        //red suitcase object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("suitcase_red.sfb"))
-                .build()
-                .thenAccept(renderable -> redRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-
-        //personal item object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("personalItem.sfb"))
-                .build()
-                .thenAccept(renderable -> personalItemRenderable= renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-
-        //personal item red object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("personalItem_red.sfb"))
-                .build()
-                .thenAccept(renderable -> personalItemRedRenderable= renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-
-        //personal item green object
-        ModelRenderable.builder()
-                .setSource(this, Uri.parse("personalItem_green.sfb"))
-                .build()
-                .thenAccept(renderable -> personalItemGreenRenderable= renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            return null;
-                        });
-    }
 
     private void attachMain() {
-        //attach main object
         if (anchorNode != null){
-            andyRenderable.setShadowCaster(false);
-            andy.getScaleController().setEnabled(false);
-            andy.setParent(this.anchorNode);
-            andy.setRenderable(andyRenderable);
-            andy.select();
+            sceneFormObjectHandler.setCarryOnNeutral(anchorNode, node);
         }
     }
 
     private void attachduffel() {
         if (anchorNode != null) {
-            //attach duffel
-            duffelRenderable.setShadowCaster(false);
-            duffel.getScaleController().setEnabled(false);
-            duffel.setParent(this.anchorNode);
-            duffel.setRenderable(duffelRenderable);
-            duffel.select();
+            sceneFormObjectHandler.setDuffelNeutral(anchorNode, node);
         }
     }
 
     private void attachPersonalMain() {
         if (anchorNode != null) {
-            personalItemRenderable.setShadowCaster(false);
-            personalItem.getScaleController().setEnabled(false);
-            personalItem.setParent(this.anchorNode);
-            personalItem.setRenderable(personalItemRenderable);
-            personalItem.select();
+            sceneFormObjectHandler.setPersonalItemNeutral(anchorNode,node);
         }
     }
 
     private void attachPersonalRed() {
-        personalItemRedRenderable.setShadowCaster(false);
-        personalItemRed.getScaleController().setEnabled(false);
-        personalItemRed.setParent(this.anchorNode);
-        personalItemRed.setRenderable(personalItemRedRenderable);
-        personalItemRed.select();
+        //TO-DO
     }
 
     private void attachPersonalGreen() {
-        personalItemGreenRenderable.setShadowCaster(false);
-        personalItemGreen.getScaleController().setEnabled(false);
-        personalItemGreen.setParent(this.anchorNode);
-        personalItemGreen.setRenderable(personalItemGreenRenderable);
-        personalItemGreen.select();
+        //TO-DO
     }
 
     private void attachDuffelGreen() {
-        duffelGreenRenderable.setShadowCaster(false);
-        duffelGreen.getScaleController().setEnabled(false);
-        duffelGreen.setParent(this.anchorNode);
-        duffelGreen.setRenderable(personalItemGreenRenderable);
-        duffelGreen.select();
+        //TO-DO
     }
 
     private void attachDuffelRed() {
-        duffelRedRenderable.setShadowCaster(false);
-        duffelRed.getScaleController().setEnabled(false);
-        duffelRed.setParent(this.anchorNode);
-        duffelRed.setRenderable(personalItemGreenRenderable);
-        duffelRed.select();
+        //TO-DO
     }
 
     private void attachGreenMain(){
-        //attach green suitcase
-        greenRenderable.setShadowCaster(false);
-        green.getScaleController().setEnabled(false);
-        green.setParent(this.anchorNode);
-        green.setRenderable(greenRenderable);
-        green.select();
+        //TO-DO
     }
 
     private void attachRedMain(){
-        //attach red suitcase
-        redRenderable.setShadowCaster(false);
-        red.getScaleController().setEnabled(false);
-        red.setParent(this.anchorNode);
-        red.setRenderable(redRenderable);
-        red.select();
+        //TO-DO
     }
 
-    private void checkModel() {
-        if (toggle.isChecked())
-        //attach duffel
-        {
-            attachduffel();
-        }
-        else
-        {
-            attachMain();
-        }
-    }
+
 
     private void setModel() {
         Log.d("setModel", "entered");
         removeAllModels();
         int toggleId = radioGroup.getCheckedRadioButtonId();
-        removeAllModels();
         switch (toggleId){
             case PERSONAL_ID:
                 attachPersonalMain();
@@ -570,8 +281,6 @@ public class ARActivity extends AppCompatActivity {
     }
 
     private void setRedModel() {
-        // do something, the isChecked will be
-        // true if the switch is in the On position
         int toggleId = radioGroup.getCheckedRadioButtonId();
         removeAllModels();
         switch (toggleId){
@@ -616,27 +325,22 @@ public class ARActivity extends AppCompatActivity {
 
     private void removeAllModels(){
         try{
-            andy.setRenderable(null);
-            red.setRenderable(null);
-            green.setRenderable(null);
-            personalItem.setRenderable(null);
-            personalItemGreen.setRenderable(null);
-            personalItemRed.setRenderable(null);
-            duffel.setRenderable(null);
-            duffelGreen.setRenderable(null);
-            duffelRed.setRenderable(null);
+            node.setRenderable(null);
         } catch (Exception e){
             Log.e("removeAllModels", e.getMessage());
         }
     }
 
     private boolean returnTrueIfChanged(int i) {
-
         if (this.changeVar == i) {
             return false;
         }
         this.changeVar = i;
         return true;
+    }
+
+    private void connectViews() {
+
     }
 
     //API Required Calls

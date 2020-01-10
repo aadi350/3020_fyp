@@ -11,17 +11,35 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-    <ImageButton
-        android:id="@+id/removeObjects"
-        android:layout_width="50dip"
-        android:layout_height="50dip"
-        android:layout_marginTop="5dip"
-        android:layout_marginEnd="5dip"
-        android:layout_gravity="right|top"
-        android:backgroundTint="#CC0000"
-        android:background="@drawable/roundcorner"
-        android:padding="12dip"
-        app:srcCompat="@drawable/baseline_delete_black_36" />
+        <TextView
+            android:id="@+id/onScreenText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/promptText"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            android:layout_marginTop="60dip"
+            android:layout_marginStart = "12dip"
+            android:layout_marginEnd="12dip"
+            android:layout_gravity="center|top"
+            android:gravity="center"
+            android:textColor="#B4B4B4"
+            android:paddingVertical="20dip"
+            android:paddingHorizontal="8dip"
+            android:background="@drawable/roundcorner_white"
+            />
+
+        <ImageButton
+            android:id="@+id/removeObjects"
+            android:layout_width="50dip"
+            android:layout_height="50dip"
+            android:layout_marginTop="7dip"
+            android:layout_marginEnd="7dip"
+            android:layout_gravity="right|top"
+            android:backgroundTint="#C70039"
+            android:background="@drawable/roundcorner"
+            android:padding="12dip"
+            app:srcCompat="@drawable/baseline_delete_white_36" />
     </fragment>
 
 
@@ -40,28 +58,38 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Personal Item" />
+            android:buttonTint="#7D3B84"
+            android:checked="true"
+            android:text="@string/personal_item"
+            android:textColor="#FFFFFF" />
 
         <RadioButton
             android:id="@+id/radio_carryon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:layout_weight="1"
+            android:buttonTint="#7D3B84"
             android:checked="true"
-            android:text="Carry-On"
             android:gravity="center"
-            android:layout_weight="1"/>
+            android:text="@string/carry_on"
+            android:textColor="#FFFFFF" />
 
         <RadioButton
             android:id="@+id/radio_duffel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Duffel"
+            android:layout_weight="1"
+            android:buttonTint="#7D3B84"
+            android:checked="false"
             android:gravity="center"
-            android:layout_weight="1"/>
+            android:text="@string/duffel"
+            android:textColor="#FFFFFF" />
 
     </RadioGroup>
+
+
 
 </FrameLayout>
 
