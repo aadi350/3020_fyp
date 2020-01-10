@@ -3,7 +3,7 @@ package com.helloarbridge4.SizeCheck;
 import com.google.ar.core.PointCloud;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.ux.TransformableNode;
-import com.helloarbridge4.ObjectCodes;
+import com.helloarbridge4.Object.ObjectCodes;
 
 public class SizeCheckHandler {
     ObjectCodes objectCodes;
@@ -19,6 +19,5 @@ public class SizeCheckHandler {
         this.objectCentre = transformableNode;
         this.objectRotation = objectCentre.getWorldRotation();
     }
-
 
 }

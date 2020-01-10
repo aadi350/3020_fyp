@@ -1,4 +1,4 @@
-package com.helloarbridge4;
+package com.helloarbridge4.Object;
 
 public enum ObjectCodes {
     FITS_PERSONAL,

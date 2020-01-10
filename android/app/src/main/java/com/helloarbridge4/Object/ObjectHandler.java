@@ -12,11 +12,9 @@ import com.helloarbridge4.Builder.objectBuilder;
 public class ObjectHandler {
 
     //Builders
-    objectBuilder carryOnBuilder = new CarryOnBuilder();
-    objectBuilder duffelBuilder = new DuffelBuilder();
-    objectBuilder personalItemBuilder = new PersonalItemBuilder();
-
-
+    private objectBuilder carryOnBuilder = new CarryOnBuilder();
+    private objectBuilder duffelBuilder = new DuffelBuilder();
+    private objectBuilder personalItemBuilder = new PersonalItemBuilder();
 
     public ObjectHandler(Context context) {
         carryOnBuilder.initBuilder(context);
