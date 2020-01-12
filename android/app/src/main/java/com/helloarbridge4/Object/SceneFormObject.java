@@ -7,6 +7,7 @@ import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
 
@@ -16,8 +17,8 @@ public class SceneFormObject extends AppCompatActivity {
     private TransformableNode node;
     private final String TAG = "SceneFormObject";
 
-
-//    private Vector3 object1LimitsXYZ = new Vector3(0.5f,0.5f,0.5f);
+    private Vector3 objectRegionLimts;
+    private Vector3 objectSize;
 
 
     public SceneFormObject(Context context, String SfbString) {
@@ -30,6 +31,11 @@ public class SceneFormObject extends AppCompatActivity {
                             Log.e(TAG, "Unable to load Renderable.", throwable);
                             return null;
                         });
+    }
+
+    public void setObjectLimits(Vector3 objectSize, Vector3 objectRegionLimts) {
+        this.objectRegionLimts = objectRegionLimts;
+        this.objectSize = objectSize;
     }
 
     public void select(AnchorNode anchorNode, TransformableNode node) {
