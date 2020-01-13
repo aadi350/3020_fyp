@@ -15,6 +15,8 @@ public class ObjectHandler {
     private objectBuilder carryOnBuilder = new CarryOnBuilder();
     private objectBuilder duffelBuilder = new DuffelBuilder();
     private objectBuilder personalItemBuilder = new PersonalItemBuilder();
+    private TransformableNode transformableNode;
+    private AnchorNode anchorNode;
 
     public ObjectHandler(Context context) {
         carryOnBuilder.initBuilder(context);
@@ -22,63 +24,72 @@ public class ObjectHandler {
         personalItemBuilder.initBuilder(context);
     }
 
-    public void setCarryOnNeutral(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setTransformableNode(TransformableNode transformableNode) {
+        if (transformableNode == null) return;
+        this.transformableNode = transformableNode;
+    }
+
+    public void setAnchorNode(AnchorNode anchorNode) {
+        this.anchorNode = anchorNode;
+    }
+
+    public void setCarryOnNeutral() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         carryOnBuilder.getNeutral().select(anchorNode,transformableNode);
     }
 
-    public void setDuffelNeutral(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setDuffelNeutral() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         duffelBuilder.getNeutral().select(anchorNode, transformableNode);
     }
 
-    public void setPersonalItemNeutral(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setPersonalItemNeutral() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         personalItemBuilder.getNeutral().select(anchorNode,transformableNode);
     }
 
-    public void setCarryOnLarge(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setCarryOnLarge() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         carryOnBuilder.getLarge().select(anchorNode,transformableNode);
     }
 
-    public void setDuffelLarge(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setDuffelLarge() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         duffelBuilder.getLarge().select(anchorNode,transformableNode);
     }
 
-    public void setPersonalItemLarge(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setPersonalItemLarge() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         personalItemBuilder.getLarge().select(anchorNode,transformableNode);
     }
 
-    public void setCarryOnFits(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setCarryOnFits() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         carryOnBuilder.getFits().select(anchorNode,transformableNode);
     }
 
-    public void setDuffelOnFits(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setDuffelFits() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }
         duffelBuilder.getFits().select(anchorNode,transformableNode);
     }
 
-    public void setPersonalItemFits(AnchorNode anchorNode, TransformableNode transformableNode) {
+    public void setPersonalItemFits() {
         if (anchorNode == null ||  transformableNode == null) {
             return;
         }

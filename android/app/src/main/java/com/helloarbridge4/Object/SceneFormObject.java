@@ -10,6 +10,7 @@ import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
+import com.helloarbridge4.SizeCheck.ObjectDetection;
 
 public class SceneFormObject extends AppCompatActivity {
 //    private static final float OBJ_DIAGONAL =  1.5625f;
@@ -17,7 +18,6 @@ public class SceneFormObject extends AppCompatActivity {
     private TransformableNode node;
     private final String TAG = "SceneFormObject";
 
-    private Vector3 objectRegionLimts;
     private Vector3 objectSize;
 
 
@@ -33,13 +33,14 @@ public class SceneFormObject extends AppCompatActivity {
                         });
     }
 
-    public void setObjectLimits(Vector3 objectSize, Vector3 objectRegionLimts) {
-        this.objectRegionLimts = objectRegionLimts;
+    public void setObjectLimits(Vector3 objectSize) {
         this.objectSize = objectSize;
     }
 
     public void select(AnchorNode anchorNode, TransformableNode node) {
         try {
+//            ObjectDetection objectDetection = ObjectDetection.getObjectDetector();
+//            objectDetection.loadObjectSize(this);
             modelRenderable.setShadowCaster(false);
             node.getScaleController().setEnabled(false);
             node.setRenderable(modelRenderable);
@@ -58,6 +59,10 @@ public class SceneFormObject extends AppCompatActivity {
         } catch (NullPointerException e) {
             Log.e(TAG, "unSelect: " + e.getMessage());
         }
+    }
+
+    public Vector3 getSize() {
+        return this.objectSize;
     }
 
 }

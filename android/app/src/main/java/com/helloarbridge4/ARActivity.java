@@ -20,6 +20,7 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
@@ -30,7 +31,11 @@ import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
+import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Object.ObjectHandler;
+import com.helloarbridge4.Object.SceneFormObject;
+import com.helloarbridge4.SizeCheck.FitCodes;
+import com.helloarbridge4.SizeCheck.ObjectDetection;
 
 
 public class ARActivity extends AppCompatActivity {
@@ -67,19 +72,16 @@ public class ARActivity extends AppCompatActivity {
             String message = intent.getStringExtra(MainActivity.REQ_MSG);
             super.onCreate(savedInstanceState);
 
+            if (!checkIsSupportedDeviceOrFinish(this)) {
+                return;
+            }
             setContentView(R.layout.ar_layout);
-
-
 
             radioGroup = findViewById(R.id.change_type);
             onScreenText = findViewById(R.id.onScreenText);
             removeObjects = findViewById(R.id.removeObjects);
+
             initFragment();
-
-            if (!checkIsSupportedDeviceOrFinish(this)) {
-                return;
-            }
-
             initSession();
 
             sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
@@ -89,6 +91,8 @@ public class ARActivity extends AppCompatActivity {
                         initAnchor(hitResult);
                         disablePlaneDetection(config);
                         createNode(arFragment);
+                        sceneFormObjectHandler.setAnchorNode(anchorNode);
+                        sceneFormObjectHandler.setTransformableNode(node);
                         setModel(radioGroup.getCheckedRadioButtonId());
                     });
 
@@ -104,9 +108,60 @@ public class ARActivity extends AppCompatActivity {
             removeObjects.setOnClickListener(
                     w -> {
                         node.setRenderable(null);
-                        radioGroup.check(R.id.radio_carryon);
+                        if (anchorNode.getAnchor() != null) {
+                            anchorNode.getAnchor().detach();
+                        }
+                        anchorNode.setParent(null);
+                        radioGroup.clearCheck();
                     }
             );
+    }
+
+
+    private void changeObjectColour(FitCodes fit_code) {
+        //TODO abstract into  class
+        int objectId = radioGroup.getCheckedRadioButtonId();
+        switch (objectId) {
+            case CARRYON_ID:
+                switch (fit_code) {
+                    case NONE:
+                        sceneFormObjectHandler.setCarryOnNeutral();
+                        break;
+                    case FIT:
+                        sceneFormObjectHandler.setCarryOnFits();
+                        break;
+                    case LARGE:
+                        sceneFormObjectHandler.setCarryOnLarge();
+                        break;
+                }
+                break;
+            case DUFFEL_ID:
+                switch (fit_code) {
+                    case NONE:
+                        sceneFormObjectHandler.setDuffelNeutral();
+                        break;
+                    case FIT:
+                        sceneFormObjectHandler.setDuffelFits();
+                        break;
+                    case LARGE:
+                        sceneFormObjectHandler.setCarryOnFits();
+                        break;
+                }
+                break;
+            case PERSONAL_ID:
+                switch (fit_code) {
+                    case NONE:
+                        sceneFormObjectHandler.setPersonalItemNeutral();
+                        break;
+                    case FIT:
+                        sceneFormObjectHandler.setPersonalItemFits();
+                        break;
+                    case LARGE:
+                        sceneFormObjectHandler.setPersonalItemLarge();
+                        break;
+                }
+                break;
+        }
     }
 
     private void createNode(ArFragment arFragment) {
@@ -120,7 +175,8 @@ public class ARActivity extends AppCompatActivity {
     private void disablePlaneDetection(Config config) {
         try {
             //disable plane detection
-            config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+            session.configure(config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED));
+            //config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
         } catch (Exception e){
             Log.e("getSession",e.getMessage());
         }
@@ -172,10 +228,35 @@ public class ARActivity extends AppCompatActivity {
             return;
         }
 
+        Boolean objectDetected = isObjectDetected();
+        if (objectDetected) {
+            changeObjectColour(FitCodes.FIT);
+        } else {
+            changeObjectColour(FitCodes.NONE);
+        }
+
+        System.out.println("Object Detected: " + objectDetected);
+
+
         try {
-            setOnScreenText(arFragment);
+            onScreenText.setText(objectDetected.toString());
+            //setOnScreenText(arFragment);
         } catch (NullPointerException e) {
             Log.e(TAG, "planeDetection: " + e.getMessage());
+        }
+    }
+
+    private Boolean isObjectDetected() {
+        try{
+            Frame frame = arFragment.getArSceneView().getArFrame();
+            PointCloud pointCloud = frame.acquirePointCloud();
+            if (pointCloud == null) return false;
+            ObjectDetection objectDetection = ObjectDetection.getObjectDetector();
+            objectDetection.loadPointCloud(pointCloud);
+            return objectDetection.objectWithinRegion(node);
+        } catch(NullPointerException e) {
+            Log.e(TAG, e.getMessage());
+            return false;
         }
     }
 
@@ -192,59 +273,21 @@ public class ARActivity extends AppCompatActivity {
         }
     }
 
-    private void attachMain() {
-        if (anchorNode == null) return;
-        sceneFormObjectHandler.setCarryOnNeutral(anchorNode, node);
-    }
 
-    private void attachduffel() {
-        if (anchorNode == null) return;
-        sceneFormObjectHandler.setDuffelNeutral(anchorNode, node);
-    }
-
-    private void attachPersonalMain() {
-        if (anchorNode == null) return;
-        sceneFormObjectHandler.setPersonalItemNeutral(anchorNode,node);
-    }
-
-    private void attachPersonalRed() {
-       //TO-DO
-    }
-
-    private void attachPersonalGreen() {
-        //TO-DO
-    }
-
-    private void attachDuffelGreen() {
-        //TO-DO
-    }
-
-    private void attachDuffelRed() {
-        //TO-DO
-    }
-
-    private void attachGreenMain(){
-        //TO-DO
-    }
-
-    private void attachRedMain(){
-        //TO-DO
-    }
 
     private void setModel(int toggleId) {
         removeAllModels();
         switch (toggleId){
             case PERSONAL_ID:
-                attachPersonalMain();
+                sceneFormObjectHandler.setPersonalItemNeutral();
                 break;
             case DUFFEL_ID:
-                attachduffel();
+                sceneFormObjectHandler.setDuffelNeutral();
                 break;
             case CARRYON_ID:
-                attachMain();
+                sceneFormObjectHandler.setCarryOnNeutral();
                 break;
             default:
-                attachMain();
                 break;
         }
         Log.d("setModel", "exxit");
