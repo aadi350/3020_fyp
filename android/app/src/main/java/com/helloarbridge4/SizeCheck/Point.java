@@ -5,7 +5,7 @@ import com.google.ar.sceneform.ux.TransformableNode;
 
 public class Point {
     private static final Float POINT_THRESH = 0.7f;
-    private Vector3 pointLocation;
+    Vector3 pointLocation;
     private Vector3 regionCentre;
 
     Point (Float x, Float y, Float z) {
@@ -38,4 +38,35 @@ public class Point {
     boolean isValid(Float confidence) {
         return (confidence > POINT_THRESH);
     }
+
+    float normalisePointVertical(float rotDeg, TransformableNode objectCentre) {
+
+        float angle = (float) Math.toRadians(rotDeg);
+        float s = (float) Math.sin(angle);
+        float c = (float) Math.cos(angle);
+
+        Vector3 objectCentreLocation = objectCentre.getWorldPosition();
+
+        Float x = this.pointLocation.x - objectCentreLocation.x;
+        Float y = this.pointLocation.y - objectCentreLocation.y;
+        Float z = this.pointLocation.z;
+
+        return (s*x + c*y);
+    }
+
+    float normalisePointHorizontal(float rotDeg, TransformableNode objectCentre) {
+
+        float angle = (float) Math.toRadians(rotDeg);
+        float s = (float) Math.sin(angle);
+        float c = (float) Math.cos(angle);
+
+        Vector3 objectCentreLocation = objectCentre.getWorldPosition();
+
+        Float x = this.pointLocation.x - objectCentreLocation.x;
+        Float y = this.pointLocation.y - objectCentreLocation.y;
+        Float z = this.pointLocation.z;
+
+        return (s*x - c*y);
+    }
+
 }

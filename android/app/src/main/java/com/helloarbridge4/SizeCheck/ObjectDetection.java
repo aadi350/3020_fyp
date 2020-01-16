@@ -14,20 +14,14 @@ public class ObjectDetection {
     private static ObjectDetection objectDetection = new ObjectDetection();
     private PointCloud pointCloud;
 
-
     public static ObjectDetection getObjectDetector() {
         return objectDetection;
     }
 
     private ObjectDetection() {
+
     }
 
-    public void loadObjectSize(SceneFormObject sceneFormObject) {
-        if (sceneFormObject == null){
-            return;
-        }
-        this.objectSize = sceneFormObject.getSize();
-    }
 
     public void loadPointCloud(PointCloud pointCloud) {
         this.pointCloud = pointCloud;

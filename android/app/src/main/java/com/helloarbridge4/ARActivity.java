@@ -15,6 +15,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.imagepipeline.backends.okhttp3.OkHttpNetworkFetcher;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
@@ -28,6 +29,7 @@ import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.ux.ArFragment;
+import com.google.ar.sceneform.ux.BaseArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
@@ -50,6 +52,7 @@ public class ARActivity extends AppCompatActivity {
     private ArFragment arFragment;
     private ImageButton removeObjects;
     private TextView onScreenText;
+    boolean objectPlaced = false;
 
     private ObjectHandler sceneFormObjectHandler;
     private TransformableNode node;
@@ -65,6 +68,7 @@ public class ARActivity extends AppCompatActivity {
     private Config config;
     private Scene scene;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
             //RN Bridge
@@ -75,6 +79,7 @@ public class ARActivity extends AppCompatActivity {
             if (!checkIsSupportedDeviceOrFinish(this)) {
                 return;
             }
+
             setContentView(R.layout.ar_layout);
 
             radioGroup = findViewById(R.id.change_type);
@@ -86,14 +91,22 @@ public class ARActivity extends AppCompatActivity {
 
             sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
 
+
             arFragment.setOnTapArPlaneListener(
                     (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                        initAnchor(hitResult);
-                        disablePlaneDetection(config);
-                        createNode(arFragment);
-                        sceneFormObjectHandler.setAnchorNode(anchorNode);
-                        sceneFormObjectHandler.setTransformableNode(node);
-                        setModel(radioGroup.getCheckedRadioButtonId());
+                        disablePlaneDetection();
+                        if(plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING)
+                            return;
+
+
+                        if (!objectPlaced) {
+                            initAnchor(hitResult);
+                            createNode(arFragment);
+                            sceneFormObjectHandler.setAnchorNode(anchorNode);
+                            sceneFormObjectHandler.setTransformableNode(node);
+                            setModel(radioGroup.getCheckedRadioButtonId());
+                            objectPlaced = true;
+                        }
                     });
 
             arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
@@ -107,14 +120,25 @@ public class ARActivity extends AppCompatActivity {
 
             removeObjects.setOnClickListener(
                     w -> {
-                        node.setRenderable(null);
-                        if (anchorNode.getAnchor() != null) {
-                            anchorNode.getAnchor().detach();
+                        //TODO abstract into function
+                        if (objectPlaced) {
+                            objectPlaced = false;
+                            removeAnchorNode(anchorNode);
+                            radioGroup.clearCheck();
+
                         }
-                        anchorNode.setParent(null);
-                        radioGroup.clearCheck();
                     }
             );
+    }
+
+    private void removeAnchorNode(AnchorNode nodeToremove) {
+        //Remove an anchor node
+        if (nodeToremove != null) {
+            arFragment.getArSceneView().getScene().removeChild(nodeToremove);
+            nodeToremove.getAnchor().detach();
+            nodeToremove.setParent(null);
+            nodeToremove = null;
+        }
     }
 
 
@@ -172,11 +196,13 @@ public class ARActivity extends AppCompatActivity {
         }
     }
 
-    private void disablePlaneDetection(Config config) {
+    private void disablePlaneDetection() {
         try {
             //disable plane detection
-            session.configure(config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED));
-            //config.setPlaneFindingMode(Config.PlaneFindingMode.DISABLED);
+            arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+            arFragment.getPlaneDiscoveryController().hide();
+            arFragment.getPlaneDiscoveryController().setInstructionView(null);
+            arFragment.getArSceneView().getPlaneRenderer().setEnabled(false);
         } catch (Exception e){
             Log.e("getSession",e.getMessage());
         }
@@ -205,19 +231,20 @@ public class ARActivity extends AppCompatActivity {
         try{
             session = new Session(this);
             config = new Config(session);
-            horizontalPlaneDetection(config);
+            horizontalPlaneDetection();
         } catch (Exception e) {
             Log.e(TAG, "session: " + e.getMessage());
         }
     }
 
-    private void horizontalPlaneDetection(Config config) {
+    private void horizontalPlaneDetection() {
         config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
         arFragment.onUpdate(frameTime);
-        disablePlaneDetection(config);
+        disablePlaneDetection();
+
 
         // If there is no frame then don't process anything.
         if (arFragment.getArSceneView().getArFrame() == null) {
@@ -239,8 +266,8 @@ public class ARActivity extends AppCompatActivity {
 
 
         try {
-            onScreenText.setText(objectDetected.toString());
-            //setOnScreenText(arFragment);
+            //onScreenText.setText(objectDetected.toString());
+            setOnScreenText(arFragment);
         } catch (NullPointerException e) {
             Log.e(TAG, "planeDetection: " + e.getMessage());
         }
