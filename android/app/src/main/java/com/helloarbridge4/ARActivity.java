@@ -295,7 +295,7 @@ public class ARActivity extends AppCompatActivity  {
             if (pointCloud == null) return false;
             ObjectDetection objectDetection = ObjectDetection.getObjectDetector();
             objectDetection.loadPointCloud(pointCloud);
-            return objectDetection.objectWithinRegion(node);
+            return false;//TODO objectDetection.objectWithinRegion(node);
         } catch(NullPointerException e) {
             Log.e(TAG, e.getMessage());
             return false;
