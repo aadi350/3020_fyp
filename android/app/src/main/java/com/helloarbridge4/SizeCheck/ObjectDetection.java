@@ -16,7 +16,7 @@ public class ObjectDetection {
     private static ObjectDetection objectDetection = new ObjectDetection();
     private PointCloud pointCloud;
     FloatBuffer points;
-    private TransformableNode node;
+    private Vector3 nodeLocation;
     private List<Point> pointList = new ArrayList<Point>();
 
     public static ObjectDetection getObjectDetector() {
@@ -27,8 +27,8 @@ public class ObjectDetection {
 
     }
 
-    public void attachTransformableNode(TransformableNode node) {
-        this.node = node;
+    public void loadTransformableNode(TransformableNode node) {
+        this.nodeLocation = node.getWorldPosition();
     }
 
     public void loadPointCloud(PointCloud pointCloud) {
@@ -36,12 +36,16 @@ public class ObjectDetection {
         this.points = pointCloud.getPoints();
     }
 
+    public void loadFloatBuffer(FloatBuffer buffer) {
+        this.points = buffer;
+    }
+
     public void loadValidPoints() throws NullPointerException{
         if (pointCloud== null) {
             throw new NullPointerException("PointCloud null");
         }
 
-        if (node == null) {
+        if (nodeLocation == null) {
             throw new NullPointerException("TransformableNode null");
         }
 
@@ -52,10 +56,14 @@ public class ObjectDetection {
                     points.get()
             );
 
-            if (Point.isValid(points.get()) && Point.filterByDistanceTo(node, point)) {
+            if (Point.isValid(points.get()) && Point.filterByDistanceTo(nodeLocation, point)) {
                 pointList.add(point);
             }
         }
+    }
+
+    public List<Point> getPointList() {
+        return this.pointList;
     }
 
     public boolean isObjectDetected(TransformableNode node) {

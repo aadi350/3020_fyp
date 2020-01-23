@@ -1,7 +1,6 @@
 package com.helloarbridge4.SizeCheck;
 
 import com.google.ar.sceneform.math.Vector3;
-import com.google.ar.sceneform.ux.TransformableNode;
 
 public class Point {
     private static final Float POINT_THRESH = 0.7f;
@@ -9,7 +8,7 @@ public class Point {
     private static final float THRESH_VERTICAL = 0.8f;
     private Vector3 pointLocation;
 
-    Point (Float x, Float y, Float z) {
+    public Point (Float x, Float y, Float z) {
         this.pointLocation = new Vector3(x,y,z);
     }
 
@@ -33,11 +32,11 @@ public class Point {
         return pointLocation.z;
     }
 
-    public static boolean filterByDistanceTo(TransformableNode node, Point point) {
+    public static boolean filterByDistanceTo(Vector3 node, Point point) {
         if (node == null || point == null) {
             return false;
         }
-        Vector3 nodeCentre = node.getWorldPosition();
+        Vector3 nodeCentre = node;
         Vector3 pointLocation = point.getXYZ();
         Vector3 distanceToCentre = Vector3.subtract(pointLocation,nodeCentre);
         return pointWithinThreshold(distanceToCentre);
