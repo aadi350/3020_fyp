@@ -13,7 +13,7 @@ public class Point {
         this.pointLocation = new Vector3(x,y,z);
     }
 
-    public boolean isValid(Float confidence) {
+    public static boolean isValid(Float confidence) {
         return (confidence > POINT_THRESH);
     }
 

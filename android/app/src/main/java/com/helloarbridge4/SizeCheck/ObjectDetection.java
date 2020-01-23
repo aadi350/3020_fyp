@@ -6,6 +6,7 @@ import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ObjectDetection {
@@ -15,6 +16,7 @@ public class ObjectDetection {
     private static ObjectDetection objectDetection = new ObjectDetection();
     private PointCloud pointCloud;
     FloatBuffer points;
+    private TransformableNode node;
     private List<Point> pointList = new ArrayList<Point>();
 
     public static ObjectDetection getObjectDetector() {
@@ -25,6 +27,9 @@ public class ObjectDetection {
 
     }
 
+    public void attachTransformableNode(TransformableNode node) {
+        this.node = node;
+    }
 
     public void loadPointCloud(PointCloud pointCloud) {
         this.pointCloud = pointCloud;
@@ -36,6 +41,10 @@ public class ObjectDetection {
             throw new NullPointerException("PointCloud null");
         }
 
+        if (node == null) {
+            throw new NullPointerException("TransformableNode null");
+        }
+
         while (points.hasRemaining()) {
             Point point = new Point(
                     points.get(),
@@ -43,7 +52,7 @@ public class ObjectDetection {
                     points.get()
             );
 
-            if (point.isValid(points.get())) {
+            if (Point.isValid(points.get()) && Point.filterByDistanceTo(node, point)) {
                 pointList.add(point);
             }
         }
@@ -85,10 +94,41 @@ public class ObjectDetection {
     }
 
     private List<Point> getLowestY() {
+
+        List<Point> upperHull = new ArrayList<Point>();
+        Point[] arr = new Point[pointList.size()];
         List<Point> sortedList = new ArrayList<Point>();
 
+        int iterator = 0;
+        for (Point temp : pointList) {
+            arr[iterator] = temp;
+            iterator++;
+        }
+        Collections.addAll(sortedList, arr);
+        sortAscendingY(arr);
 
+        for (Point temp : arr) {
+            sortedList.add(temp);
+        }
 
+        for (Point point : sortedList) {
+            while (sortedList.size() >= 2) {
+                Point q = upperHull.get(upperHull.size() - 1);
+                Point r = upperHull.get(upperHull.size() - 2);
+
+                if ((q.getX() - r.getX())*(point.getY() - r.getY())
+                        >= ((q.getY() - r.getY())*(point.getX() - r.getX()))) {
+                    sortedList.remove(point);
+                } else {
+                    break;
+                }
+                upperHull.add(point);
+            }
+        }
+        //TODO implement sorting algorithm
+//        for (Point point : sortedArray) {
+//            sortedList.add(point);
+//        }
         return sortedList;
     }
 

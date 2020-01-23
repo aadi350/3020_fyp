@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,6 +19,7 @@ import android.widget.Toast;
 
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpNetworkFetcher;
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
@@ -33,14 +36,24 @@ import com.google.ar.sceneform.ux.BaseArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
+import com.helloarbridge4.Helper.DisplayRotationHelper;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Object.ObjectHandler;
 import com.helloarbridge4.Object.SceneFormObject;
+import com.helloarbridge4.Render.BackgroundRenderer;
+import com.helloarbridge4.Render.PlaneRenderer;
+import com.helloarbridge4.Render.PointCloudRenderer;
 import com.helloarbridge4.SizeCheck.FitCodes;
 import com.helloarbridge4.SizeCheck.ObjectDetection;
 
+import java.io.IOException;
+import java.util.ArrayList;
 
-public class ARActivity extends AppCompatActivity {
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+
+public class ARActivity extends AppCompatActivity  {
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final int FRAME_COUNT_THRESH = 15;
@@ -131,7 +144,9 @@ public class ARActivity extends AppCompatActivity {
             );
     }
 
-    private void removeAnchorNode(AnchorNode nodeToremove) {
+
+
+  private void removeAnchorNode(AnchorNode nodeToremove) {
         //Remove an anchor node
         if (nodeToremove != null) {
             arFragment.getArSceneView().getScene().removeChild(nodeToremove);
