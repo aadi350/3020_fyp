@@ -88,6 +88,11 @@ public class Point3F extends Object{
         );
     }
 
+    @Override
+    public Point3F clone() {
+        return new Point3F(x,y,z);
+    }
+
     public Point3F[] newArray(int size) {
         return new Point3F[size];
     }
