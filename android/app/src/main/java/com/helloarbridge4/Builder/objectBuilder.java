@@ -11,11 +11,7 @@ public abstract class objectBuilder extends AppCompatActivity {
     protected Context context;
     protected String SFBRed, SFBGreen, SFBNeutral;
     protected Vector3 objectSize;
-    protected Vector3 objectRegionLimts;
 
-
-    //TO-DO
-    //implement ObjectBuilder classes
     protected SceneFormObject objectLarge, objectFits, objectNeutral;
 
     public abstract void initBuilder(Context context);
@@ -53,5 +49,9 @@ public abstract class objectBuilder extends AppCompatActivity {
     protected void buildNeutral() {
         this.objectNeutral = new SceneFormObject(this.context, SFBNeutral);
         this.objectNeutral.setObjectLimits(objectSize);
+    }
+
+    public Vector3 getObjectSize() {
+        return  this.objectSize;
     }
 }
