@@ -43,8 +43,8 @@ import com.helloarbridge4.Object.SceneFormObject;
 import com.helloarbridge4.Render.BackgroundRenderer;
 import com.helloarbridge4.Render.PlaneRenderer;
 import com.helloarbridge4.Render.PointCloudRenderer;
+import com.helloarbridge4.SizeCheck.ConvexHull;
 import com.helloarbridge4.SizeCheck.FitCodes;
-import com.helloarbridge4.SizeCheck.ObjectDetection;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class ARActivity extends AppCompatActivity  {
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
-    private static final int FRAME_COUNT_THRESH = 15;
+    private static final int FRAME_COUNT_THRESH = 60;
 
     private static final int PERSONAL_ID = R.id.radio_personal;
     private static final int CARRYON_ID = R.id.radio_carryon;
@@ -65,12 +65,13 @@ public class ARActivity extends AppCompatActivity  {
     private ArFragment arFragment;
     private ImageButton removeObjects;
     private TextView onScreenText;
+    private ConvexHull convexHull;
     boolean objectPlaced = false;
 
     private ObjectHandler sceneFormObjectHandler;
     private TransformableNode node;
 
-    private int frameCount = 0;
+    private int frames = 0;
 
     //local coordinates of placed object anchor
     private Vector3 anchorPosition;
@@ -86,6 +87,7 @@ public class ARActivity extends AppCompatActivity  {
     protected void onCreate(Bundle savedInstanceState) {
             //RN Bridge
             Intent intent = getIntent();
+            convexHull = new ConvexHull();
             String message = intent.getStringExtra(MainActivity.REQ_MSG);
             super.onCreate(savedInstanceState);
 
@@ -99,10 +101,12 @@ public class ARActivity extends AppCompatActivity  {
             onScreenText = findViewById(R.id.onScreenText);
             removeObjects = findViewById(R.id.removeObjects);
 
+            sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
+
             initFragment();
             initSession();
 
-            sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
+
 
 
             arFragment.setOnTapArPlaneListener(
@@ -117,6 +121,9 @@ public class ARActivity extends AppCompatActivity  {
                             createNode(arFragment);
                             sceneFormObjectHandler.setAnchorNode(anchorNode);
                             sceneFormObjectHandler.setTransformableNode(node);
+                            //TODO
+                            //objectDetection  = ObjectDetection.getObjectDetector();
+                            //objectDetection.loadTransformableNode(node);
                             setModel(radioGroup.getCheckedRadioButtonId());
                             objectPlaced = true;
                         }
@@ -257,9 +264,9 @@ public class ARActivity extends AppCompatActivity  {
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
+        frames++;
         arFragment.onUpdate(frameTime);
         disablePlaneDetection();
-
 
         // If there is no frame then don't process anything.
         if (arFragment.getArSceneView().getArFrame() == null) {
@@ -270,49 +277,44 @@ public class ARActivity extends AppCompatActivity  {
             return;
         }
 
-        Boolean objectDetected = isObjectDetected();
-        if (objectDetected) {
-            changeObjectColour(FitCodes.FIT);
-        } else {
-            changeObjectColour(FitCodes.NONE);
-        }
-
-        System.out.println("Object Detected: " + objectDetected);
-
-
         try {
-            //onScreenText.setText(objectDetected.toString());
             setOnScreenText(arFragment);
         } catch (NullPointerException e) {
-            Log.e(TAG, "planeDetection: " + e.getMessage());
+            Log.e(TAG, e.getLocalizedMessage());
         }
+
+        Frame frame = arFragment.getArSceneView().getArFrame();
+        PointCloud pointCloud = frame.acquirePointCloud();
+        if (pointCloud != null && frames == FRAME_COUNT_THRESH) {
+            frames = 0;
+            if (node != null) {
+                //TODO object detection
+//                objectDetection.loadPointCloud(pointCloud);
+//                objectDetection.loadValidPoints();
+//                objectDetection.generateHull();
+            }
+         pointCloud.release();
     }
 
-    private Boolean isObjectDetected() {
-        try{
-            Frame frame = arFragment.getArSceneView().getArFrame();
-            PointCloud pointCloud = frame.acquirePointCloud();
-            if (pointCloud == null) return false;
-            ObjectDetection objectDetection = ObjectDetection.getObjectDetector();
-            objectDetection.loadPointCloud(pointCloud);
-            return false;//TODO objectDetection.objectWithinRegion(node);
-        } catch(NullPointerException e) {
-            Log.e(TAG, e.getMessage());
-            return false;
-        }
-    }
+}
+
+
 
     private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
         Frame frame = arFragment.getArSceneView().getArFrame();
-        for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
-            if (plane != null || node.getRenderable() == null) {
-                onScreenText.setText(R.string.planeDetected);
-            } if(node.getRenderable() != null) {
-                onScreenText.setText(R.string.objectPlaced);
-            }else {
-                onScreenText.setText(R.string.planeNotDetected);
+
+            if (frame != null) {
+            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
+                if (plane != null || node.getRenderable() == null) {
+                    onScreenText.setText(R.string.planeDetected);
+                } if(node.getRenderable() != null) {
+                    onScreenText.setText(R.string.objectPlaced);
+                }else {
+                    onScreenText.setText(R.string.planeNotDetected);
+                }
             }
-        }
+            }
+
     }
 
 

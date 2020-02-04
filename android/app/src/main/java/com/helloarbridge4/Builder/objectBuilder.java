@@ -10,7 +10,7 @@ import com.helloarbridge4.Object.SceneFormObject;
 public abstract class objectBuilder extends AppCompatActivity {
     protected Context context;
     protected String SFBRed, SFBGreen, SFBNeutral;
-    protected Vector3 objectSize;
+    protected static Vector3 objectSize;
 
     protected SceneFormObject objectLarge, objectFits, objectNeutral;
 
@@ -51,7 +51,7 @@ public abstract class objectBuilder extends AppCompatActivity {
         this.objectNeutral.setObjectLimits(objectSize);
     }
 
-    public Vector3 getObjectSize() {
-        return  this.objectSize;
+    public static Vector3 getObjectSize() {
+        return objectSize;
     }
 }

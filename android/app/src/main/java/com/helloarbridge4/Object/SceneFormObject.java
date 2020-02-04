@@ -10,7 +10,6 @@ import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
-import com.helloarbridge4.SizeCheck.ObjectDetection;
 
 public class SceneFormObject extends AppCompatActivity {
 //    private static final float OBJ_DIAGONAL =  1.5625f;
