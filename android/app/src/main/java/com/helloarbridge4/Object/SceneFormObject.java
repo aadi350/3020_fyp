@@ -16,9 +16,7 @@ public class SceneFormObject extends AppCompatActivity {
     private ModelRenderable modelRenderable;
     private TransformableNode node;
     private final String TAG = "SceneFormObject";
-
     private Vector3 objectSize;
-
 
     public SceneFormObject(Context context, String SfbString) {
         ModelRenderable.builder()
@@ -38,8 +36,6 @@ public class SceneFormObject extends AppCompatActivity {
 
     public void select(AnchorNode anchorNode, TransformableNode node) {
         try {
-//            ObjectDetection objectDetection = ObjectDetection.getObjectDetector();
-//            objectDetection.loadObjectSize(this);
             modelRenderable.setShadowCaster(false);
             node.getScaleController().setEnabled(false);
             node.setRenderable(modelRenderable);

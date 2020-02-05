@@ -1,6 +1,3 @@
-import android.graphics.Point;
-import android.graphics.PointF;
-
 import com.google.ar.sceneform.math.Vector3;
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.Point3F.PointFilter;
@@ -13,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Point3FTest {
+public class PointFilterTest {
 
     final int LOOP_COUNT = 100000;
     final float Z_THRESH = 0.1f;

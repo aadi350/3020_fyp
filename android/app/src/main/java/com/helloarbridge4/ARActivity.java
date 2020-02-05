@@ -1,13 +1,9 @@
 package com.helloarbridge4;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,9 +13,9 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.facebook.imagepipeline.backends.okhttp3.OkHttpNetworkFetcher;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.ar.core.Anchor;
-import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
@@ -32,25 +28,14 @@ import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.ux.ArFragment;
-import com.google.ar.sceneform.ux.BaseArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
-import com.helloarbridge4.Helper.DisplayRotationHelper;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Object.ObjectHandler;
-import com.helloarbridge4.Object.SceneFormObject;
-import com.helloarbridge4.Render.BackgroundRenderer;
-import com.helloarbridge4.Render.PlaneRenderer;
-import com.helloarbridge4.Render.PointCloudRenderer;
 import com.helloarbridge4.SizeCheck.ConvexHull;
 import com.helloarbridge4.SizeCheck.FitCodes;
-
-import java.io.IOException;
-import java.util.ArrayList;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
+import com.helloarbridge4.SizeCheck.SizeCheckHandler;
 
 
 public class ARActivity extends AppCompatActivity  {
@@ -73,6 +58,10 @@ public class ARActivity extends AppCompatActivity  {
 
     private int frames = 0;
 
+
+    private SizeCheckHandler sizeHandler;
+    private ObjectCodes currentModel;
+
     //local coordinates of placed object anchor
     private Vector3 anchorPosition;
     private RadioGroup radioGroup;
@@ -88,6 +77,7 @@ public class ARActivity extends AppCompatActivity  {
             //RN Bridge
             Intent intent = getIntent();
             convexHull = new ConvexHull();
+            sizeHandler = new SizeCheckHandler();
             String message = intent.getStringExtra(MainActivity.REQ_MSG);
             super.onCreate(savedInstanceState);
 
@@ -121,9 +111,6 @@ public class ARActivity extends AppCompatActivity  {
                             createNode(arFragment);
                             sceneFormObjectHandler.setAnchorNode(anchorNode);
                             sceneFormObjectHandler.setTransformableNode(node);
-                            //TODO
-                            //objectDetection  = ObjectDetection.getObjectDetector();
-                            //objectDetection.loadTransformableNode(node);
                             setModel(radioGroup.getCheckedRadioButtonId());
                             objectPlaced = true;
                         }
@@ -140,12 +127,10 @@ public class ARActivity extends AppCompatActivity  {
 
             removeObjects.setOnClickListener(
                     w -> {
-                        //TODO abstract into function
                         if (objectPlaced) {
                             objectPlaced = false;
                             removeAnchorNode(anchorNode);
                             radioGroup.clearCheck();
-
                         }
                     }
             );
@@ -287,11 +272,12 @@ public class ARActivity extends AppCompatActivity  {
         PointCloud pointCloud = frame.acquirePointCloud();
         if (pointCloud != null && frames == FRAME_COUNT_THRESH) {
             frames = 0;
-            if (node != null) {
-                //TODO object detection
-//                objectDetection.loadPointCloud(pointCloud);
-//                objectDetection.loadValidPoints();
-//                objectDetection.generateHull();
+            if (node != null && objectPlaced) {
+                sizeHandler.loadPointCloud(pointCloud);
+                sizeHandler.loadObjectPosition(node);
+                //TODO feedback to colourchange
+                boolean fits = sizeHandler.checkIfFits(currentModel);
+                Log.d("FITS:",String.valueOf(fits));
             }
          pointCloud.release();
     }
@@ -323,18 +309,21 @@ public class ARActivity extends AppCompatActivity  {
         removeAllModels();
         switch (toggleId){
             case PERSONAL_ID:
+                currentModel = ObjectCodes.PERSONAL;
                 sceneFormObjectHandler.setPersonalItemNeutral();
                 break;
             case DUFFEL_ID:
+                currentModel = ObjectCodes.DUFFEL;
                 sceneFormObjectHandler.setDuffelNeutral();
                 break;
             case CARRYON_ID:
+                currentModel = ObjectCodes.CARRYON;
                 sceneFormObjectHandler.setCarryOnNeutral();
                 break;
             default:
                 break;
         }
-        Log.d("setModel", "exxit");
+        Log.d("setModel", "exit");
     }
 
     private void removeAllModels(){
