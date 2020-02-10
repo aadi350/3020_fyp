@@ -57,6 +57,18 @@ public class Point3F extends Object{
         z += dz;
     }
 
+    public final float distanceTo(Point3F point) {
+        if (point == null) return -1f;
+        if (point.equals(this)) return 0f;
+
+        float xSquared = (float) Math.pow(point.x - this.x,2);
+        float ySquared = (float) Math.pow(point.y - this.y,2);
+        float zSquared = (float) Math.pow(point.z - this.z,2);
+
+        return (float) Math.sqrt(xSquared + ySquared + zSquared);
+
+    }
+
     public final boolean equals(float x, float y, float z) {
         return this.x == x && this.y == y;
     }
