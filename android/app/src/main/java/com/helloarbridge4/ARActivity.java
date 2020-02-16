@@ -33,13 +33,13 @@ import com.google.ar.sceneform.ux.TransformableNode;
 import com.helloarbridge4.Object.DuffelHandler;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Object.ObjectHandler;
+import com.helloarbridge4.SizeCheck.ColourChangeHandler;
 import com.helloarbridge4.SizeCheck.FitCodes;
 import com.helloarbridge4.SizeCheck.SizeCheckHandler;
 
 
 public class ARActivity extends AppCompatActivity  {
     private static final String SCN_TAG = "OnSceneUpdate";
-    //private static final String SIZE_TAG = "SizeCheckHandler";
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final int FRAME_COUNT_THRESH = 60;
@@ -53,7 +53,7 @@ public class ARActivity extends AppCompatActivity  {
     private TextView onScreenText;
     boolean objectPlaced = false;
 
-    private ObjectHandler objectHandler;
+    private ColourChangeHandler colourChangeHandler;
     private TransformableNode node;
 
     private int frames = 0;
@@ -98,7 +98,9 @@ public class ARActivity extends AppCompatActivity  {
             debugText_width = findViewById(R.id.debugText_width);
             debugText_length = findViewById(R.id.debugText_length);
 
-            objectHandler = new DuffelHandler(this.getApplicationContext());
+
+            colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
+
             initFragment();
             initSession();
 
@@ -115,8 +117,10 @@ public class ARActivity extends AppCompatActivity  {
                         if (!objectPlaced) {
                             initAnchor(hitResult);
                             createNode(arFragment);
-                            objectHandler.setAnchorNode(anchorNode);
-                            objectHandler.setTransformableNode(node);
+
+                            colourChangeHandler.setAnchorNode(anchorNode);
+                            colourChangeHandler.setTransformableNode(node);
+
                             setModel(radioGroup.getCheckedRadioButtonId());
                             objectPlaced = true;
                         }
@@ -152,53 +156,6 @@ public class ARActivity extends AppCompatActivity  {
             nodeToremove.getAnchor().detach();
             nodeToremove.setParent(null);
             nodeToremove = null;
-        }
-    }
-
-
-    private void changeObjectColour(FitCodes fit_code) {
-        //TODO abstract into  class
-        int objectId = radioGroup.getCheckedRadioButtonId();
-        switch (objectId) {
-            case CARRYON_ID:
-                switch (fit_code) {
-                    case NONE:
-                        objectHandler.setCarryOnNeutral();
-                        break;
-                    case FIT:
-                        objectHandler.setCarryOnFits();
-                        break;
-                    case LARGE:
-                        objectHandler.setCarryOnLarge();
-                        break;
-                }
-                break;
-            case DUFFEL_ID:
-                switch (fit_code) {
-                    case NONE:
-                        objectHandler.setDuffelNeutral();
-                        break;
-                    case FIT:
-                        objectHandler.setDuffelFits();
-                        break;
-                    case LARGE:
-                        objectHandler.setCarryOnFits();
-                        break;
-                }
-                break;
-            case PERSONAL_ID:
-                switch (fit_code) {
-                    case NONE:
-                        objectHandler.setPersonalItemNeutral();
-                        break;
-                    case FIT:
-                        objectHandler.setPersonalItemFits();
-                        break;
-                    case LARGE:
-                        objectHandler.setPersonalItemLarge();
-                        break;
-                }
-                break;
         }
     }
 
@@ -285,10 +242,10 @@ public class ARActivity extends AppCompatActivity  {
 
                 if (node != null && objectPlaced) {
                     sizeHandler.loadObjectPosition(node);
-                    //TODO feedback to colourchange
+
                     FitCodes fits = sizeHandler.checkIfFits(currentModel, node, frame.acquirePointCloud());
-                    fits = FitCodes.LARGE;
-                    updateObject(fits, currentModel);
+                    //fits = FitCodes.LARGE;
+                    colourChangeHandler.setObject(fits);
                     //TODO remove
                     updateDebugText(
                                 String.valueOf(sizeHandler.getBoxLength()),
@@ -298,65 +255,6 @@ public class ARActivity extends AppCompatActivity  {
                 }
 
 
-    }
-
-    private void updateObject(FitCodes fitCode, ObjectCodes objectCode) {
-        switch (objectCode) {
-            case CARRYON:
-                colourChangeCarryOn(fitCode);
-                break;
-            case PERSONAL:
-                colourChangePersonal(fitCode);
-                break;
-            case DUFFEL:
-                colourChangeDuffel(fitCode);
-                break;
-        }
-    }
-
-    private void colourChangeDuffel(FitCodes fitCode) {
-        currentModel = ObjectCodes.DUFFEL;
-        switch (fitCode) {
-            case FIT:
-                objectHandler.setFits();
-                break;
-            case LARGE:
-                objectHandler.setLarge();
-                break;
-            default:
-                objectHandler.setNeutral();
-                break;
-        }
-    }
-
-    private void colourChangeCarryOn(FitCodes fitCode) {
-        currentModel = ObjectCodes.CARRYON;
-        switch (fitCode) {
-            case FIT:
-                objectHandler.setCarryOnFits();
-                break;
-            case LARGE:
-                objectHandler.setCarryOnLarge();
-                break;
-            default:
-                objectHandler.setDuffelNeutral();
-                break;
-        }
-    }
-
-    private void colourChangePersonal(FitCodes fitCode) {
-        currentModel = ObjectCodes.PERSONAL;
-        switch (fitCode) {
-            case FIT:
-                objectHandler.setPersonalItemFits();
-                break;
-            case LARGE:
-                objectHandler.setPersonalItemLarge();
-                break;
-            default:
-                objectHandler.setPersonalItemNeutral();
-                break;
-        }
     }
 
 
@@ -382,15 +280,18 @@ public class ARActivity extends AppCompatActivity  {
         switch (toggleId){
             case PERSONAL_ID:
                 currentModel = ObjectCodes.PERSONAL;
-                objectHandler.setPersonalItemNeutral();
+                colourChangeHandler.updateObject(currentModel);
+                colourChangeHandler.setObject(FitCodes.NONE);
                 break;
             case DUFFEL_ID:
                 currentModel = ObjectCodes.DUFFEL;
-                objectHandler.setDuffelNeutral();
+                colourChangeHandler.updateObject(currentModel);
+                colourChangeHandler.setObject(FitCodes.NONE);
                 break;
             case CARRYON_ID:
                 currentModel = ObjectCodes.CARRYON;
-                objectHandler.setCarryOnNeutral();
+                colourChangeHandler.updateObject(currentModel);
+                colourChangeHandler.setObject(FitCodes.NONE);
                 break;
             default:
                 break;
