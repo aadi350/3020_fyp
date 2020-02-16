@@ -3,8 +3,8 @@ package com.helloarbridge4.SizeCheck;
 import com.helloarbridge4.Point3F.Point3F;
 import java.util.ArrayList;
 
-public class ConvexHull {
-    public ArrayList<Point3F> quickHull(ArrayList<Point3F> points) {
+public class QuickHull {
+    public static ArrayList<Point3F> getConvexHull(ArrayList<Point3F> points) {
         ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
         if (points.size() < 3) {
             return (ArrayList) points.clone();
@@ -47,17 +47,9 @@ public class ConvexHull {
         return convexHull;
     }
 
-    public float distance(Point3F A, Point3F B, Point3F C) {
-        float ABx = B.x - A.x;
-        float ABy = B.y - A.y;
-        float num = ABx * (A.y - C.y) - ABy * (A.x - C.x);
-        if (num < 0) {
-            num = -num;
-        }
-        return num;
-    }
 
-    public void hullSet(Point3F A, Point3F B, ArrayList<Point3F> set, ArrayList<Point3F> hull) {
+
+    public static void hullSet(Point3F A, Point3F B, ArrayList<Point3F> set, ArrayList<Point3F> hull) {
         int insertPosition = hull.indexOf(B);
         if (set.size() == 0) {
             return;
@@ -102,7 +94,17 @@ public class ConvexHull {
         hullSet(P, B, leftSetPB, hull);
     }
 
-    public int pointLocation(Point3F A, Point3F B, Point3F P) {
+    public static float distance(Point3F A, Point3F B, Point3F C) {
+        float ABx = B.x - A.x;
+        float ABy = B.y - A.y;
+        float num = ABx * (A.y - C.y) - ABy * (A.x - C.x);
+        if (num < 0) {
+            num = -num;
+        }
+        return num;
+    }
+
+    public static int pointLocation(Point3F A, Point3F B, Point3F P) {
         float cp1 = (B.x - A.x) * (P.y - A.y) - (B.y - A.y) * (P.x - A.x);
         if (cp1 > 0)
             return 1;

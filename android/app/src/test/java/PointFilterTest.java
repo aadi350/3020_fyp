@@ -1,3 +1,6 @@
+import android.graphics.PointF;
+import android.util.Log;
+
 import com.google.ar.sceneform.math.Vector3;
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.Point3F.PointFilter;
@@ -12,7 +15,7 @@ import java.util.Random;
 
 public class PointFilterTest {
 
-    final int LOOP_COUNT = 100000;
+    final int LOOP_COUNT = 1000000;
     final float Z_THRESH = 0.1f;
     final Vector3 REGION_LIMITS = new Vector3(0.8f,0.8f,0.8f);
     final float POINT_CONF_LIM = 0.7f;
@@ -37,20 +40,32 @@ public class PointFilterTest {
 
     @Test
     public void filterByRegion() {
+
         FloatBuffer floatBuffer = FloatBuffer.allocate(LOOP_COUNT);
+        ArrayList<Point3F> pointList = new ArrayList<>();
+        Vector3 refPoint = new Vector3(0f,0f,0f);
+        Float MAX = 15f, MIN = -15f;
 
         for (int i = 0; i < LOOP_COUNT; i++) {
-            floatBuffer.put((float) Math.random());
+            pointList.add(new Point3F(
+                    generateRandomInRange(MAX,MIN),
+                    generateRandomInRange(MAX,MIN),
+                    generateRandomInRange(MAX,MIN)
+                    ));
         }
 
-        List<Point3F> pointList = PointFilter.filterByConfidence(floatBuffer);
 
-        for (Point3F point : pointList) {
+        System.out.println(pointList.size());
+        ArrayList<Point3F> closeList = PointFilter.filterByRegion(pointList, refPoint);
+        System.out.println(closeList.size());
+        for (Point3F point : closeList) {
+            System.out.println(point.toString());
             Assert.assertTrue(
-                    point.x <= REGION_LIMITS.x &&
-                            point.y <= REGION_LIMITS.y &&
-                            point.z <= REGION_LIMITS.z
+                    Math.abs(point.x - refPoint.x) <= REGION_LIMITS.x &&
+                            Math.abs(point.y - refPoint.y) <= REGION_LIMITS.y &&
+                            Math.abs(point.z - refPoint.z) <= REGION_LIMITS.z
             );
+
         }
 
         floatBuffer.clear();
@@ -60,6 +75,7 @@ public class PointFilterTest {
 
     @Test
     public void filterByGround() {
+        Vector3 ground = new Vector3(Vector3.zero());
         ArrayList<Point3F> pointList = new ArrayList<>();
         Random rd = new Random();
         for (int i = 0; i < LOOP_COUNT; i++) {
@@ -72,7 +88,7 @@ public class PointFilterTest {
             );
         }
 
-        ArrayList<Point3F> filteredList = PointFilter.filterGround(pointList);
+        ArrayList<Point3F> filteredList = PointFilter.filterGround(pointList, ground);
 
         for (Point3F point : filteredList) {
             Assert.assertTrue(
@@ -81,10 +97,16 @@ public class PointFilterTest {
         }
 
         filteredList.clear();
-        Assert.assertNotNull(PointFilter.filterGround(filteredList));
+        Assert.assertNotNull(PointFilter.filterGround(filteredList, ground));
 
         filteredList = null;
-        Assert.assertNotNull(PointFilter.filterGround(filteredList));
+        Assert.assertNotNull(PointFilter.filterGround(filteredList, ground));
+    }
+
+    float generateRandomInRange(Float max, Float min) {
+        Random rd = new Random();
+
+        return (min + rd.nextFloat()*(max - min));
     }
 
 

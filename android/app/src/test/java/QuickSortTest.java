@@ -53,7 +53,7 @@ public class QuickSortTest {
     @Test
     public void getHighestZ() {
         Random rd = new Random();
-        int NUM_POINTS = 10000;
+        int NUM_POINTS = 100000;
         float highZ = Float.NEGATIVE_INFINITY;
         ArrayList<Point3F> pointList = new ArrayList<>();
         for (int i = 0; i < NUM_POINTS; i++) {

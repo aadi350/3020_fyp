@@ -2,7 +2,6 @@ package com.helloarbridge4.Point3F;
 import androidx.annotation.NonNull;
 
 import com.google.ar.sceneform.math.Vector3;
-import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -10,9 +9,9 @@ import java.util.List;
 
 
 public class PointFilter {
-    private static final float Z_THRESH = 0.1f;
+    private static final float Z_THRESH = 0.2f;
     private static final float POINT_CONFIDENCE_MIN = 0.7f;
-    private static final Vector3 REGION_LIMITS = new Vector3(0.8f,0.8f,0.8f);
+    private static final Vector3 REGION_LIMITS = new Vector3(0.5f,0.5f,0.5f);
 
     public static boolean filterSingleByConfidence(Point3F point) {
         if (point == null) throw new NullPointerException();
@@ -20,10 +19,10 @@ public class PointFilter {
         return  (point.c > POINT_CONFIDENCE_MIN);
     }
 
-    public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, TransformableNode node) {
+    public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 node) {
         List<Point3F> confPoints = filterByConfidence(pointBuffer);
         ArrayList<Point3F> closePoints = filterByRegion(confPoints, node);
-        ArrayList<Point3F> filteredPoints = filterGround(closePoints);
+        ArrayList<Point3F> filteredPoints = filterGround(closePoints,node);
         return filteredPoints;
     }
 
@@ -47,22 +46,22 @@ public class PointFilter {
         return pointList;
     }
 
-    public static ArrayList<Point3F> filterGround(ArrayList<Point3F> pointList) {
+    public static ArrayList<Point3F> filterGround(ArrayList<Point3F> pointList, Vector3 node) {
         if (pointList == null) return new ArrayList<Point3F>();
         ArrayList<Point3F> filteredList = new ArrayList<>();
 
         for (Point3F point : pointList) {
-            if (point.z > Z_THRESH) {
+            if (point.z > Z_THRESH + node.z) {
                 filteredList.add(point);
             }
         }
         return  filteredList;
     }
 
-    public static ArrayList<Point3F> filterByRegion (@NonNull List<Point3F> pointList, TransformableNode node) {
+    public static ArrayList<Point3F> filterByRegion (@NonNull List<Point3F> pointList,Vector3 node) {
         ArrayList<Point3F> points = new ArrayList<>();
         for (Point3F point : pointList) {
-            if (filterPointByRegion(point, node.getWorldPosition())) {
+            if (filterPointByRegion(point, node)) {
                 points.add(point);
             }
         }
@@ -70,13 +69,14 @@ public class PointFilter {
     }
 
     private static boolean filterPointByRegion(@NonNull Point3F point, Vector3 referencePoint) {
-        float x = Math.abs(point.x);
-        float y = Math.abs(point.y);
-        float z = Math.abs(point.z);
 
-        if (x > REGION_LIMITS.x) return false;
-        if (y > REGION_LIMITS.y) return false;
-        if (z > REGION_LIMITS.z) return false;
+        Float difX = (Float) Math.abs(point.x - referencePoint.x);
+        Float difY = (Float) Math.abs(point.y - referencePoint.y);
+        Float difZ = (Float) Math.abs(point.z - referencePoint.z);
+
+        if (difX > REGION_LIMITS.x) return false;
+        if (difY > REGION_LIMITS.y) return false;
+        if (difZ > REGION_LIMITS.z) return false;
 
         return true;
     }

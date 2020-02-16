@@ -20,7 +20,6 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
@@ -31,14 +30,16 @@ import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
+import com.helloarbridge4.Object.DuffelHandler;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Object.ObjectHandler;
-import com.helloarbridge4.SizeCheck.ConvexHull;
 import com.helloarbridge4.SizeCheck.FitCodes;
 import com.helloarbridge4.SizeCheck.SizeCheckHandler;
 
 
 public class ARActivity extends AppCompatActivity  {
+    private static final String SCN_TAG = "OnSceneUpdate";
+    //private static final String SIZE_TAG = "SizeCheckHandler";
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final int FRAME_COUNT_THRESH = 60;
@@ -50,13 +51,13 @@ public class ARActivity extends AppCompatActivity  {
     private ArFragment arFragment;
     private ImageButton removeObjects;
     private TextView onScreenText;
-    private ConvexHull convexHull;
     boolean objectPlaced = false;
 
-    private ObjectHandler sceneFormObjectHandler;
+    private ObjectHandler objectHandler;
     private TransformableNode node;
 
     private int frames = 0;
+    private int framesStart = 0;
 
 
     private SizeCheckHandler sizeHandler;
@@ -67,6 +68,8 @@ public class ARActivity extends AppCompatActivity  {
     private RadioGroup radioGroup;
     private AnchorNode anchorNode;
 
+    static TextView debugText_height, debugText_width, debugText_length;
+
     private Session session;
     private Config config;
     private Scene scene;
@@ -76,7 +79,6 @@ public class ARActivity extends AppCompatActivity  {
     protected void onCreate(Bundle savedInstanceState) {
             //RN Bridge
             Intent intent = getIntent();
-            convexHull = new ConvexHull();
             sizeHandler = new SizeCheckHandler();
             String message = intent.getStringExtra(MainActivity.REQ_MSG);
             super.onCreate(savedInstanceState);
@@ -91,8 +93,12 @@ public class ARActivity extends AppCompatActivity  {
             onScreenText = findViewById(R.id.onScreenText);
             removeObjects = findViewById(R.id.removeObjects);
 
-            sceneFormObjectHandler = new ObjectHandler(this.getApplicationContext());
+            //TODO remove
+            debugText_height = findViewById(R.id.debugText_height);
+            debugText_width = findViewById(R.id.debugText_width);
+            debugText_length = findViewById(R.id.debugText_length);
 
+            objectHandler = new DuffelHandler(this.getApplicationContext());
             initFragment();
             initSession();
 
@@ -109,8 +115,8 @@ public class ARActivity extends AppCompatActivity  {
                         if (!objectPlaced) {
                             initAnchor(hitResult);
                             createNode(arFragment);
-                            sceneFormObjectHandler.setAnchorNode(anchorNode);
-                            sceneFormObjectHandler.setTransformableNode(node);
+                            objectHandler.setAnchorNode(anchorNode);
+                            objectHandler.setTransformableNode(node);
                             setModel(radioGroup.getCheckedRadioButtonId());
                             objectPlaced = true;
                         }
@@ -129,6 +135,7 @@ public class ARActivity extends AppCompatActivity  {
                     w -> {
                         if (objectPlaced) {
                             objectPlaced = false;
+                            framesStart = 0;
                             removeAnchorNode(anchorNode);
                             radioGroup.clearCheck();
                         }
@@ -156,39 +163,39 @@ public class ARActivity extends AppCompatActivity  {
             case CARRYON_ID:
                 switch (fit_code) {
                     case NONE:
-                        sceneFormObjectHandler.setCarryOnNeutral();
+                        objectHandler.setCarryOnNeutral();
                         break;
                     case FIT:
-                        sceneFormObjectHandler.setCarryOnFits();
+                        objectHandler.setCarryOnFits();
                         break;
                     case LARGE:
-                        sceneFormObjectHandler.setCarryOnLarge();
+                        objectHandler.setCarryOnLarge();
                         break;
                 }
                 break;
             case DUFFEL_ID:
                 switch (fit_code) {
                     case NONE:
-                        sceneFormObjectHandler.setDuffelNeutral();
+                        objectHandler.setDuffelNeutral();
                         break;
                     case FIT:
-                        sceneFormObjectHandler.setDuffelFits();
+                        objectHandler.setDuffelFits();
                         break;
                     case LARGE:
-                        sceneFormObjectHandler.setCarryOnFits();
+                        objectHandler.setCarryOnFits();
                         break;
                 }
                 break;
             case PERSONAL_ID:
                 switch (fit_code) {
                     case NONE:
-                        sceneFormObjectHandler.setPersonalItemNeutral();
+                        objectHandler.setPersonalItemNeutral();
                         break;
                     case FIT:
-                        sceneFormObjectHandler.setPersonalItemFits();
+                        objectHandler.setPersonalItemFits();
                         break;
                     case LARGE:
-                        sceneFormObjectHandler.setPersonalItemLarge();
+                        objectHandler.setPersonalItemLarge();
                         break;
                 }
                 break;
@@ -249,7 +256,12 @@ public class ARActivity extends AppCompatActivity  {
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
+
         frames++;
+        Log.d(SCN_TAG, String.valueOf(frames));
+        framesStart++;
+        Log.d(SCN_TAG, "SStart: " + String.valueOf(framesStart));
+
         arFragment.onUpdate(frameTime);
         disablePlaneDetection();
 
@@ -268,22 +280,84 @@ public class ARActivity extends AppCompatActivity  {
             Log.e(TAG, e.getLocalizedMessage());
         }
 
+
         Frame frame = arFragment.getArSceneView().getArFrame();
-        PointCloud pointCloud = frame.acquirePointCloud();
-        if (pointCloud != null && frames == FRAME_COUNT_THRESH) {
-            frames = 0;
-            if (node != null && objectPlaced) {
-                sizeHandler.loadPointCloud(pointCloud);
-                sizeHandler.loadObjectPosition(node);
-                //TODO feedback to colourchange
-                boolean fits = sizeHandler.checkIfFits(currentModel);
-                Log.d("FITS:",String.valueOf(fits));
-            }
-         pointCloud.release();
+
+                if (node != null && objectPlaced) {
+                    sizeHandler.loadObjectPosition(node);
+                    //TODO feedback to colourchange
+                    FitCodes fits = sizeHandler.checkIfFits(currentModel, node, frame.acquirePointCloud());
+                    fits = FitCodes.LARGE;
+                    updateObject(fits, currentModel);
+                    //TODO remove
+                    updateDebugText(
+                                String.valueOf(sizeHandler.getBoxLength()),
+                                String.valueOf(sizeHandler.getBoxWidth()),
+                                String.valueOf(sizeHandler.getHighZ())
+                    );
+                }
+
+
     }
 
-}
+    private void updateObject(FitCodes fitCode, ObjectCodes objectCode) {
+        switch (objectCode) {
+            case CARRYON:
+                colourChangeCarryOn(fitCode);
+                break;
+            case PERSONAL:
+                colourChangePersonal(fitCode);
+                break;
+            case DUFFEL:
+                colourChangeDuffel(fitCode);
+                break;
+        }
+    }
 
+    private void colourChangeDuffel(FitCodes fitCode) {
+        currentModel = ObjectCodes.DUFFEL;
+        switch (fitCode) {
+            case FIT:
+                objectHandler.setFits();
+                break;
+            case LARGE:
+                objectHandler.setLarge();
+                break;
+            default:
+                objectHandler.setNeutral();
+                break;
+        }
+    }
+
+    private void colourChangeCarryOn(FitCodes fitCode) {
+        currentModel = ObjectCodes.CARRYON;
+        switch (fitCode) {
+            case FIT:
+                objectHandler.setCarryOnFits();
+                break;
+            case LARGE:
+                objectHandler.setCarryOnLarge();
+                break;
+            default:
+                objectHandler.setDuffelNeutral();
+                break;
+        }
+    }
+
+    private void colourChangePersonal(FitCodes fitCode) {
+        currentModel = ObjectCodes.PERSONAL;
+        switch (fitCode) {
+            case FIT:
+                objectHandler.setPersonalItemFits();
+                break;
+            case LARGE:
+                objectHandler.setPersonalItemLarge();
+                break;
+            default:
+                objectHandler.setPersonalItemNeutral();
+                break;
+        }
+    }
 
 
     private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
@@ -303,22 +377,20 @@ public class ARActivity extends AppCompatActivity  {
 
     }
 
-
-
     private void setModel(int toggleId) {
         removeAllModels();
         switch (toggleId){
             case PERSONAL_ID:
                 currentModel = ObjectCodes.PERSONAL;
-                sceneFormObjectHandler.setPersonalItemNeutral();
+                objectHandler.setPersonalItemNeutral();
                 break;
             case DUFFEL_ID:
                 currentModel = ObjectCodes.DUFFEL;
-                sceneFormObjectHandler.setDuffelNeutral();
+                objectHandler.setDuffelNeutral();
                 break;
             case CARRYON_ID:
                 currentModel = ObjectCodes.CARRYON;
-                sceneFormObjectHandler.setCarryOnNeutral();
+                objectHandler.setCarryOnNeutral();
                 break;
             default:
                 break;
@@ -360,6 +432,18 @@ public class ARActivity extends AppCompatActivity  {
         public void applySelectionVisual(BaseTransformableNode node) {}
         @Override
         public void removeSelectionVisual(BaseTransformableNode node) {}
+    }
+
+
+    //TODO remove
+    private void updateDebugText(String textOne, String textTwo, String textThree) {
+        String lengthText = "Length: " + textOne;
+        String widthText = "Width: " + textTwo;
+        String heightText = "HighZ: " + textThree;
+        debugText_length.setText(lengthText);
+        debugText_width.setText(widthText);
+        debugText_height.setText(heightText);
+
     }
 
 

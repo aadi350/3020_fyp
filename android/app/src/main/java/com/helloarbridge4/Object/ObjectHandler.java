@@ -9,14 +9,21 @@ import com.helloarbridge4.Builder.DuffelBuilder;
 import com.helloarbridge4.Builder.PersonalItemBuilder;
 import com.helloarbridge4.Builder.objectBuilder;
 
-public class ObjectHandler {
+public abstract class ObjectHandler {
 
     //Builders
-    private objectBuilder carryOnBuilder = new CarryOnBuilder();
-    private objectBuilder duffelBuilder = new DuffelBuilder();
-    private objectBuilder personalItemBuilder = new PersonalItemBuilder();
-    private TransformableNode transformableNode;
-    private AnchorNode anchorNode;
+    protected objectBuilder carryOnBuilder = new CarryOnBuilder();
+    protected objectBuilder duffelBuilder = new DuffelBuilder();
+    protected objectBuilder personalItemBuilder = new PersonalItemBuilder();
+    protected TransformableNode transformableNode;
+    protected AnchorNode anchorNode;
+
+    public ObjectHandler() {}
+
+    public abstract void setNeutral();
+    public abstract void setFits();
+    public abstract void setLarge();
+
 
     public ObjectHandler(Context context) {
         carryOnBuilder.initBuilder(context);
@@ -32,6 +39,8 @@ public class ObjectHandler {
     public void setAnchorNode(AnchorNode anchorNode) {
         this.anchorNode = anchorNode;
     }
+
+
 
     public void setCarryOnNeutral() {
         if (anchorNode == null ||  transformableNode == null) {
@@ -59,13 +68,6 @@ public class ObjectHandler {
             return;
         }
         carryOnBuilder.getLarge().select(anchorNode,transformableNode);
-    }
-
-    public void setDuffelLarge() {
-        if (anchorNode == null ||  transformableNode == null) {
-            return;
-        }
-        duffelBuilder.getLarge().select(anchorNode,transformableNode);
     }
 
     public void setPersonalItemLarge() {

@@ -1,14 +1,24 @@
 package com.helloarbridge4.SizeCheck;
 
+import android.util.Log;
+
 import com.helloarbridge4.Point3F.Point3F;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class QuickSort {
+    private static final String TAG = "QuickSort";
+
     public float getHighestZ(ArrayList<Point3F> pointList) {
         ArrayList<Point3F> sortedList = sortByHeight(pointList);
-        return sortedList.get(sortedList.size() - 1).z;
+        float highZ = 0.0f;
+        try {
+            highZ = sortedList.get(sortedList.size() - 1).z;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            Log.e(TAG, e.getLocalizedMessage());
+        }
+        return highZ;
     }
 
     public ArrayList<Point3F> sortByHeight(ArrayList<Point3F> pointList) {
