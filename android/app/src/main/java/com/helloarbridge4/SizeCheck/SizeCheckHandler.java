@@ -50,7 +50,6 @@ public class SizeCheckHandler {
 
             if (boundingBox.length != 4)return null;
 
-            //TODO replace with function calls
             actualSize = new Vector3(getBoxLength(), getBoxWidth(), highZ);
             switch (objectCode) {
                 case CARRYON:

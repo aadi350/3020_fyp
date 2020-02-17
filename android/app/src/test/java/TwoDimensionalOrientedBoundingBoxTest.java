@@ -1,11 +1,14 @@
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.SizeCheck.TwoDimensionalOrientedBoundingBox;
+import com.mathworks.toolbox.javabuilder.MWException;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+
 import java.util.ArrayList;
 import java.util.Random;
+
 
 public class TwoDimensionalOrientedBoundingBoxTest {
 
@@ -15,6 +18,7 @@ public class TwoDimensionalOrientedBoundingBoxTest {
 
     @Test
     public void getMinimumBoundingRectangleKnown() {
+
         Point3F[] expected = {
                 new Point3F(280f,-40f,0f),
                 new Point3F(200f,200f,0f),
