@@ -1,5 +1,6 @@
 package com.helloarbridge4;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -11,38 +12,49 @@ import android.view.MotionEvent;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
+import com.google.ar.core.LightEstimate;
 import com.google.ar.core.Plane;
+import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
+import com.google.ar.sceneform.rendering.Light;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
-import com.helloarbridge4.Object.DuffelHandler;
+
 import com.helloarbridge4.Object.ObjectCodes;
-import com.helloarbridge4.Object.ObjectHandler;
 import com.helloarbridge4.SizeCheck.ColourChangeHandler;
 import com.helloarbridge4.SizeCheck.FitCodes;
 import com.helloarbridge4.SizeCheck.SizeCheckHandler;
 
+import java.nio.FloatBuffer;
 
-public class ARActivity extends AppCompatActivity  {
+
+public class ARActivity extends AppCompatActivity{
     private static final String SCN_TAG = "OnSceneUpdate";
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final int FRAME_COUNT_THRESH = 60;
+    private static final float LIGHT_THRESH = 0.3f;
 
     private static final int PERSONAL_ID = R.id.radio_personal;
     private static final int CARRYON_ID = R.id.radio_carryon;
@@ -74,7 +86,6 @@ public class ARActivity extends AppCompatActivity  {
     private Config config;
     private Scene scene;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
             //RN Bridge
@@ -86,9 +97,26 @@ public class ARActivity extends AppCompatActivity  {
             if (!checkIsSupportedDeviceOrFinish(this)) {
                 return;
             }
+            //Perimssions handling
+        try {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[] {Manifest.permission.CAMERA},
+                    0
+            );
 
+            ArCoreApk.Availability ArCoreSupported = ArCoreApk.getInstance().checkAvailability(this);
+            ArCoreApk.getInstance().requestInstall(this, ArCoreSupported.isSupported());
+
+            } catch (UnavailableUserDeclinedInstallationException e) {
+                Log.e(TAG, e.getLocalizedMessage());
+            } catch (UnavailableDeviceNotCompatibleException e) {
+                Log.e(TAG, e.getLocalizedMessage());
+            }
+
+
+            //connecting views
             setContentView(R.layout.ar_layout);
-
             radioGroup = findViewById(R.id.change_type);
             onScreenText = findViewById(R.id.onScreenText);
             removeObjects = findViewById(R.id.removeObjects);
@@ -97,59 +125,67 @@ public class ARActivity extends AppCompatActivity  {
             debugText_height = findViewById(R.id.debugText_height);
             debugText_width = findViewById(R.id.debugText_width);
             debugText_length = findViewById(R.id.debugText_length);
-
+            //end remove
 
             colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
 
             initFragment();
             initSession();
+//
+//                Frame frame = arFragment.getArSceneView().getArFrame();
+//                LightEstimate lightEstimate = frame.getLightEstimate();
+//                Float pixelIntensity = lightEstimate.getPixelIntensity();
+
+
+                    arFragment.setOnTapArPlaneListener(
+                            (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
+                                if(plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING) {
+                                    return;
+                                }
+
+                                disablePlaneDetection();
+
+                                if (!objectPlaced) {
+                                    initAnchor(hitResult);
+                                    createNode(arFragment);
+
+                                    colourChangeHandler.setAnchorNode(anchorNode);
+                                    colourChangeHandler.setTransformableNode(node);
+
+                                    setModel(radioGroup.getCheckedRadioButtonId());
+                                    objectPlaced = true;
+                                }
+                            });
+
+                    arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
+
+                    radioGroup.setOnCheckedChangeListener(
+                            (group, checkedId) -> {
+                                setModel(checkedId);
+                            }
+
+                    );
+
+                    removeObjects.setOnClickListener(
+                            w -> {
+                                if (objectPlaced) {
+                                    objectPlaced = false;
+                                    framesStart = 0;
+                                    try {
+                                        removeAnchorNode(anchorNode);
+                                    } catch (NullPointerException e) {
+                                        Log.w(TAG, e.getLocalizedMessage());
+                                    }
+                                    radioGroup.clearCheck();
+                                }
+                            }
+                    );
+
+        }
 
 
 
-
-            arFragment.setOnTapArPlaneListener(
-                    (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                        disablePlaneDetection();
-                        if(plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING)
-                            return;
-
-
-                        if (!objectPlaced) {
-                            initAnchor(hitResult);
-                            createNode(arFragment);
-
-                            colourChangeHandler.setAnchorNode(anchorNode);
-                            colourChangeHandler.setTransformableNode(node);
-
-                            setModel(radioGroup.getCheckedRadioButtonId());
-                            objectPlaced = true;
-                        }
-                    });
-
-            arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
-
-            radioGroup.setOnCheckedChangeListener(
-                    (group, checkedId) -> {
-                        setModel(checkedId);
-                    }
-
-            );
-
-            removeObjects.setOnClickListener(
-                    w -> {
-                        if (objectPlaced) {
-                            objectPlaced = false;
-                            framesStart = 0;
-                            removeAnchorNode(anchorNode);
-                            radioGroup.clearCheck();
-                        }
-                    }
-            );
-    }
-
-
-
-  private void removeAnchorNode(AnchorNode nodeToremove) {
+  private void removeAnchorNode(AnchorNode nodeToremove) throws NullPointerException {
         //Remove an anchor node
         if (nodeToremove != null) {
             arFragment.getArSceneView().getScene().removeChild(nodeToremove);
@@ -159,7 +195,7 @@ public class ARActivity extends AppCompatActivity  {
         }
     }
 
-    private void createNode(ArFragment arFragment) {
+    private void createNode(ArFragment arFragment) throws NullPointerException {
         try {
             node = new TransformableNode(arFragment.getTransformationSystem());
         } catch (Exception e){
@@ -174,7 +210,7 @@ public class ARActivity extends AppCompatActivity  {
             arFragment.getPlaneDiscoveryController().hide();
             arFragment.getPlaneDiscoveryController().setInstructionView(null);
             arFragment.getArSceneView().getPlaneRenderer().setEnabled(false);
-        } catch (Exception e){
+        } catch (NullPointerException e){
             Log.e("getSession",e.getMessage());
         }
     }
@@ -202,23 +238,17 @@ public class ARActivity extends AppCompatActivity  {
         try{
             session = new Session(this);
             config = new Config(session);
-            horizontalPlaneDetection();
+            config.setLightEstimationMode(Config.LightEstimationMode.AMBIENT_INTENSITY);
+            config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
         } catch (Exception e) {
             Log.e(TAG, "session: " + e.getMessage());
         }
-    }
-
-    private void horizontalPlaneDetection() {
-        config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
 
         frames++;
         Log.d(SCN_TAG, String.valueOf(frames));
-        framesStart++;
-        Log.d(SCN_TAG, "SStart: " + String.valueOf(framesStart));
-
         arFragment.onUpdate(frameTime);
         disablePlaneDetection();
 
@@ -240,11 +270,19 @@ public class ARActivity extends AppCompatActivity  {
 
         Frame frame = arFragment.getArSceneView().getArFrame();
 
-                if (node != null && objectPlaced) {
-                    sizeHandler.loadObjectPosition(node);
 
-                    FitCodes fits = sizeHandler.checkIfFits(currentModel, node, frame.acquirePointCloud());
-                    //fits = FitCodes.LARGE;
+                if (nodeNotNull() && objectPlaced) {
+                    FitCodes fits = FitCodes.NONE;
+                    try {
+
+                        PointCloud pointCloud = frame.acquirePointCloud();
+                        FloatBuffer pointBuffer = pointCloud.getPoints();
+                        Vector3 anchorNodePosition = anchorNode.getWorldPosition();
+                        fits = sizeHandler.checkIfFits(currentModel, anchorNodePosition, pointBuffer);
+                    } catch (Exception e) {
+                        Log.e(TAG,e.getLocalizedMessage());
+                    }
+
                     colourChangeHandler.setObject(fits);
                     //TODO remove
                     updateDebugText(
@@ -257,23 +295,11 @@ public class ARActivity extends AppCompatActivity  {
 
     }
 
-
-    private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
-        Frame frame = arFragment.getArSceneView().getArFrame();
-
-            if (frame != null) {
-            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
-                if (plane != null || node.getRenderable() == null) {
-                    onScreenText.setText(R.string.planeDetected);
-                } if(node.getRenderable() != null) {
-                    onScreenText.setText(R.string.objectPlaced);
-                }else {
-                    onScreenText.setText(R.string.planeNotDetected);
-                }
-            }
-            }
-
+    private boolean nodeNotNull() {
+        return (node != null);
     }
+
+
 
     private void setModel(int toggleId) {
         removeAllModels();
@@ -328,6 +354,7 @@ public class ARActivity extends AppCompatActivity  {
         }
         return true;
     }
+
     public class CustomVisualizer implements SelectionVisualizer {
         @Override
         public void applySelectionVisual(BaseTransformableNode node) {}
@@ -346,6 +373,25 @@ public class ARActivity extends AppCompatActivity  {
         debugText_height.setText(heightText);
 
     }
+
+    //TODO remove
+    private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
+        Frame frame = arFragment.getArSceneView().getArFrame();
+
+        if (frame != null) {
+            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
+                if (plane != null || node.getRenderable() == null) {
+                    onScreenText.setText(R.string.planeDetected);
+                } if(node.getRenderable() != null) {
+                    onScreenText.setText(R.string.objectPlaced);
+                }else {
+                    onScreenText.setText(R.string.planeNotDetected);
+                }
+            }
+        }
+
+    }
+
 
 
 

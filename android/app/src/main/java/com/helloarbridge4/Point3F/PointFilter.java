@@ -10,7 +10,7 @@ import java.util.List;
 
 public class PointFilter {
     private static final float Z_THRESH = 0.2f;
-    private static final float POINT_CONFIDENCE_MIN = 0.7f;
+    private static final float POINT_CONFIDENCE_MIN = 0.5f;
     private static final Vector3 REGION_LIMITS = new Vector3(0.5f,0.5f,0.5f);
 
     public static boolean filterSingleByConfidence(Point3F point) {

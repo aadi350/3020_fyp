@@ -2,9 +2,7 @@ package com.helloarbridge4.SizeCheck;
 
 import android.util.Log;
 
-import com.google.ar.core.PointCloud;
 import com.google.ar.sceneform.math.Vector3;
-import com.google.ar.sceneform.ux.TransformableNode;
 import com.helloarbridge4.Builder.CarryOnBuilder;
 import com.helloarbridge4.Builder.DuffelBuilder;
 import com.helloarbridge4.Builder.PersonalItemBuilder;
@@ -16,37 +14,39 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
 public class SizeCheckHandler {
-    private final int POINT_LOWER_THRESH = 25;
+    private final int POINT_LOWER_THRESH = 100;
     private final String TAG = "SizeCheckHandler";
+    private final String RECT_TAG = "Rectangle";
     private Vector3 objectSize = new Vector3();
     private Vector3 nodePosition;
     private Point3F[] boundingBox;
+    private Vector3 storedObjectPosition = new Vector3(Vector3.zero());
     private ArrayList<Point3F> pointList = new ArrayList<>();
     private float highZ;
 
 
-    public FitCodes checkIfFits(ObjectCodes objectCode, TransformableNode node, PointCloud pointCloud) {
-        if (pointCloud == null) return null;
+    public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer) {
+        if (pointBuffer == null) return null;
         Log.d(TAG, "checkIfFits()");
         QuickSort q = new QuickSort();
-        QuickHull c = new QuickHull();
 
-        Vector3 actualSize = Vector3.zero();
-        Vector3 objectPosition = loadObjectPosition(node);
-        FloatBuffer pointBuffer = loadPointCloud(pointCloud);
+        Vector3 actualSize = new Vector3(Vector3.zero());
+
+        //Resets object measurement to accomodate new object position
+        boolean newPosition = emptyPointListOnMove(nodePosition);
+        if (newPosition) return FitCodes.NONE;
+
+        //Ensures there are points to check and filters Points in PointCloud by distance to
+        //placed object and object confidence score
+
         if (!pointBuffer.hasRemaining()) return null;
-        getValidPoints(pointBuffer, objectPosition);
+        getValidPoints(pointBuffer, storedObjectPosition);
 
         if (pointList.size() < POINT_LOWER_THRESH) return null;
 
         try {
             boundingBox = TwoDimensionalOrientedBoundingBox.getMinimumBoundingRectangle(pointList);
-            highZ = q.getHighestZ(this.pointList) - node.getWorldPosition().z;
-            Log.d(TAG,"HighZ: " + highZ);
-            Log.d(TAG, "Corners: " + boundingBox[0] + " ");
-            Log.d(TAG, "Corners: " + boundingBox[1] + " ");
-            Log.d(TAG, "Corners: " + boundingBox[2] + " ");
-            Log.d(TAG, "Corners: " + boundingBox[3] + " ");
+            highZ = q.getHighestZ(this.pointList);// - nodePosition.z;
 
             if (boundingBox.length != 4)return null;
 
@@ -60,22 +60,15 @@ public class SizeCheckHandler {
                     objectSize = PersonalItemBuilder.getObjectSize();
             }
 
-        } catch (IllegalArgumentException i ) {
+        } catch (Exception i ) {
             Log.w(TAG, i.getLocalizedMessage());
-        } catch (ArrayIndexOutOfBoundsException a) {
-            Log.w(TAG, a.getLocalizedMessage());
-        } catch (IndexOutOfBoundsException b) {
-            Log.w(TAG, b.getLocalizedMessage());
-        } catch (Exception e) {
-            Log.w(TAG,e.getLocalizedMessage());
         }
 
         if (actualSize.equals(Vector3.zero())) return null;
 
 
         boolean fits = compareLimits(objectSize, actualSize);
-        FitCodes fitCode = (fits) ? FitCodes.FIT : FitCodes.LARGE;
-        return fitCode;
+        return (fits) ? FitCodes.FIT : FitCodes.LARGE;
     }
 
 
@@ -94,17 +87,6 @@ public class SizeCheckHandler {
         Log.d(TAG,"PointList Size: " + pointList.size());
     }
 
-    public FloatBuffer loadPointCloud(PointCloud pointCloud) {
-        if (pointCloud == null) return FloatBuffer.allocate(0);
-        FloatBuffer pointBuffer = pointCloud.getPoints();
-        Log.d(TAG, "pointCloud loaded, PointBuffer NULL: " + (pointBuffer == null));
-        return pointBuffer;
-    }
-
-    public Vector3 loadObjectPosition(TransformableNode node) {
-        Log.d(TAG,"Pos: " + node.getWorldPosition().toString());
-        return node.getWorldPosition();
-    }
 
 
     public float getBoxLength() {
@@ -115,13 +97,35 @@ public class SizeCheckHandler {
         return getBoxDimLW(this.boundingBox)[1];
     }
 
+    public float getBoxLength(Point3F[] boundingBox) {
+        return getBoxDimLW(boundingBox)[0];
+    }
+
+    public float getBoxWidth(Point3F[] boundingBox) {
+        return getBoxDimLW(boundingBox)[1];
+    }
+
     public float getHighZ() {
         if (this.highZ < 0f) return -1f;
         return this.highZ;
     }
 
+    public boolean emptyPointListOnMove(Vector3 currentPosition) {
+        float THRESH = 0.01f;
+        if (currentPosition == null) return false;
+        boolean xDif = Math.abs(currentPosition.x - storedObjectPosition.x) > THRESH;
+        boolean yDif =Math.abs(currentPosition.y - storedObjectPosition.y) > THRESH;
+        boolean zDif = Math.abs(currentPosition.z - storedObjectPosition.z) > THRESH;
+        if (xDif || yDif || zDif) {
+            pointList.clear();
+            storedObjectPosition.set(currentPosition);
+            Log.d(TAG,"pointList cleared");
+            return true;
+        }
+        return false;
+    }
 
-    private float[] getBoxDimLW(Point3F[] boundingBox) {
+    public float[] getBoxDimLW(Point3F[] boundingBox) {
         float[] inputNullArray = {-1f,-1f};
         if (boundingBox == null || boundingBox.length != 4) return inputNullArray;
 

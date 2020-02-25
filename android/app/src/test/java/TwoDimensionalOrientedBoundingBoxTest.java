@@ -16,6 +16,7 @@ public class TwoDimensionalOrientedBoundingBoxTest {
     final float MAX = 5f;
     final float MIN = -5f;
 
+
     @Test
     public void getMinimumBoundingRectangleKnown() {
 
@@ -40,6 +41,8 @@ public class TwoDimensionalOrientedBoundingBoxTest {
             Assert.assertEquals(expected[i].y,p.y,0.2);
             i++;
         }
+
+        System.out.println(pointList);
     }
 
     @Test

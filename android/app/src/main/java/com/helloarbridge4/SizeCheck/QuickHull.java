@@ -13,6 +13,7 @@ public class QuickHull {
         int minPoint = -1, maxPoint = -1;
         float minX = Float.MAX_VALUE;
         float maxX = Float.MIN_VALUE;
+
         for (int i = 0; i < points.size(); i++) {
             if (points.get(i).x < minX) {
                 minX = points.get(i).x;
@@ -23,8 +24,8 @@ public class QuickHull {
                 maxPoint = i;
             }
         }
-        Point3F A = points.get(minPoint);
-        Point3F B = points.get(maxPoint);
+        final Point3F A = points.get(minPoint);
+        final Point3F B = points.get(maxPoint);
         convexHull.add(A);
         convexHull.add(B);
         points.remove(A);
@@ -35,8 +36,9 @@ public class QuickHull {
 
         for (int i = 0; i < points.size(); i++) {
             Point3F p = points.get(i);
-            if (pointLocation(A, B, p) == -1)
+            if (pointLocation(A, B, p) == -1){
                 leftSet.add(p);
+            }
             else if (pointLocation(A, B, p) == 1)
                 rightSet.add(p);
         }
