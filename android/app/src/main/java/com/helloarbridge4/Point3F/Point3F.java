@@ -89,7 +89,7 @@ public class Point3F extends Object{
 
     @Override
     public String toString() {
-        return "Point3F(" + x + "," + y + "," + z + ")";
+        return (x + "\t" + y + "\t" + z + "\n");
     }
 
     public static float length(float x, float y, float z) {

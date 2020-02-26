@@ -39,7 +39,7 @@ public final class TwoDimensionalOrientedBoundingBox {
 
         ArrayList<Point3F[]> rectangles = new ArrayList<>();
 
-        ArrayList<Point3F> convexHull = Scan.getConvexHull(points);
+        ArrayList<Point3F> convexHull = QuickHull.getConvexHull(points);
 
         Caliper I = new Caliper(convexHull, getIndex(convexHull, Corner.UPPER_RIGHT), 90);
         Caliper J = new Caliper(convexHull, getIndex(convexHull, Corner.UPPER_LEFT), 180);
@@ -93,8 +93,8 @@ public final class TwoDimensionalOrientedBoundingBox {
 
         int index = 0;
         Point3F point = convexHull.get(index);
-
-        for(int i = 1; i < convexHull.size() - 1; i++) {
+//        for(int i = 1; i < convexHull.size() -1 ; i++) {
+        for(int i = 1; i < convexHull.size(); i++) {
 
             Point3F temp = convexHull.get(i);
             boolean change = false;
@@ -234,7 +234,7 @@ public final class TwoDimensionalOrientedBoundingBox {
         }
     }
 
-    private static class Scan {
+     public static class Scan {
         private static final String TAG = "GrahamScan";
         protected static  enum Turn {CW, CCW, COLLINEAR}
 

@@ -4,11 +4,18 @@ import com.helloarbridge4.Point3F.Point3F;
 import java.util.ArrayList;
 
 public class QuickHull {
-    public static ArrayList<Point3F> getConvexHull(ArrayList<Point3F> points) {
-        ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
-        if (points.size() < 3) {
+
+    private QuickHull() {
+
+    }
+
+    @SuppressWarnings("unchecked")
+    public static ArrayList<Point3F> getConvexHull(ArrayList<Point3F> points) throws NullPointerException {
+        if (points.size() <= 4) {
             return (ArrayList) points.clone();
         }
+
+        final ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
 
         int minPoint = -1, maxPoint = -1;
         float minX = Float.MAX_VALUE;
@@ -39,8 +46,9 @@ public class QuickHull {
             if (pointLocation(A, B, p) == -1){
                 leftSet.add(p);
             }
-            else if (pointLocation(A, B, p) == 1)
+            else if (pointLocation(A,B,p) == 1){
                 rightSet.add(p);
+            }
         }
 
         hullSet(A, B, rightSet, convexHull);
@@ -52,12 +60,12 @@ public class QuickHull {
 
 
     public static void hullSet(Point3F A, Point3F B, ArrayList<Point3F> set, ArrayList<Point3F> hull) {
-        int insertPosition = hull.indexOf(B);
+        final int insertPosition = hull.indexOf(B);
         if (set.size() == 0) {
             return;
         }
         if (set.size() == 1) {
-            Point3F p = set.get(0);
+            final Point3F p = set.get(0);
             set.remove(p);
             hull.add(insertPosition, p);
             return;
@@ -73,21 +81,21 @@ public class QuickHull {
             }
         }
 
-        Point3F P = set.get(furthestPoint);
+        final Point3F P = set.get(furthestPoint);
         set.remove(furthestPoint);
         hull.add(insertPosition, P);
 
-        ArrayList<Point3F> leftSetAP = new ArrayList<Point3F>();
+        final ArrayList<Point3F> leftSetAP = new ArrayList<Point3F>();
         for (int i = 0; i < set.size(); i++) {
-            Point3F M = set.get(i);
+            final Point3F M = set.get(i);
             if (pointLocation(A, P, M) == 1) {
                 leftSetAP.add(M);
             }
         }
 
-        ArrayList<Point3F> leftSetPB = new ArrayList<Point3F>();
+        final ArrayList<Point3F> leftSetPB = new ArrayList<Point3F>();
         for (int i = 0; i < set.size(); i++) {
-            Point3F M = set.get(i);
+            final Point3F M = set.get(i);
             if (pointLocation(P, B, M) == 1)  {
                 leftSetPB.add(M);
             }
@@ -97,8 +105,8 @@ public class QuickHull {
     }
 
     public static float distance(Point3F A, Point3F B, Point3F C) {
-        float ABx = B.x - A.x;
-        float ABy = B.y - A.y;
+        final float ABx = B.x - A.x;
+        final float ABy = B.y - A.y;
         float num = ABx * (A.y - C.y) - ABy * (A.x - C.x);
         if (num < 0) {
             num = -num;
