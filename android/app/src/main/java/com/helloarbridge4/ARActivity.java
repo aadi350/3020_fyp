@@ -238,8 +238,8 @@ public class ARActivity extends AppCompatActivity{
         try{
             session = new Session(this);
             config = new Config(session);
-            config.setLightEstimationMode(Config.LightEstimationMode.AMBIENT_INTENSITY);
-            config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+            //config.setLightEstimationMode(Config.LightEstimationMode.AMBIENT_INTENSITY);
+            //config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
         } catch (Exception e) {
             Log.e(TAG, "session: " + e.getMessage());
         }

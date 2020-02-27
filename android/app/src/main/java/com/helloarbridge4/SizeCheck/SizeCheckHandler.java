@@ -111,7 +111,7 @@ public class SizeCheckHandler {
     }
 
     public boolean emptyPointListOnMove(Vector3 currentPosition) {
-        float THRESH = 0.01f;
+        float THRESH = 0.001f;
         if (currentPosition == null) return false;
         boolean xDif = Math.abs(currentPosition.x - storedObjectPosition.x) > THRESH;
         boolean yDif =Math.abs(currentPosition.y - storedObjectPosition.y) > THRESH;
@@ -120,8 +120,10 @@ public class SizeCheckHandler {
             pointList.clear();
             storedObjectPosition.set(currentPosition);
             Log.d(TAG,"pointList cleared");
+            Log.d(TAG,currentPosition.toString());
             return true;
         }
+        Log.d(TAG,"emptyListOnMove(): " + currentPosition.toString());
         return false;
     }
 

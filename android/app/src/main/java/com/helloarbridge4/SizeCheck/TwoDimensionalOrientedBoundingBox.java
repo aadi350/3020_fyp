@@ -16,6 +16,71 @@ public final class TwoDimensionalOrientedBoundingBox {
 
     protected enum Corner { UPPER_RIGHT, UPPER_LEFT, LOWER_LEFT, LOWER_RIGHT }
 
+    public static Point3F[] getOBB(ArrayList<Point3F> pointList) {
+        Polygon polygon =  new Polygon(pointList);
+        return getMinimumBoundingRectangle(polygon);
+    }
+
+    public static Point3F[] getMinimumBoundingRectangle(Polygon polygon) {
+        Rectangle[] rects = new Rectangle[polygon.edgeCount()];
+
+        for(int i=0;i<polygon.edgeCount();i++)
+        {
+            Point3F edge = polygon.getEdge(i);
+            //Rotate the polygon so that the current edge is parallel to a major axis
+            //The y-Axis in this use case
+            double theta = Math.acos(edge.normalise2D().y);
+            polygon.rotate(theta);
+            //Calculate a bounding box
+            rects[i] = boundingBox(polygon);
+            polygon.rotate(-theta);
+            rects[i].rotate(-theta, polygon.getCenter());
+        }
+
+        double minArea = Double.MAX_VALUE;
+        Rectangle box = rects[0];
+
+        //Find the bounding box with the smallest area, this is the minimum bounding box
+        for(int i=0;i<rects.length;i++)
+        {
+            double area = rects[i].area();
+            if(area < minArea)
+            {
+                minArea = area;
+                box = rects[i];
+            }
+        }
+        Point3F[]  boxPoints  = new Point3F[4];
+
+        for (int i = 0;  i < 4;  i++) {
+            boxPoints[i] =  box.getPoint(i);
+        }
+        return boxPoints;
+
+    }
+
+    public static Rectangle boundingBox(Polygon polygon)
+    {
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float maxX = Float.MIN_VALUE;
+        float maxY = Float.MIN_VALUE;
+
+        for(int i=0;i<polygon.pointCount();i++)
+        {
+            Point3F p = polygon.getPoint(i);
+            if(minX > p.x)
+                minX = p.x;
+            if(maxX < p.x)
+                maxX = p.x;
+            if(minY > p.y)
+                minY = p.y;
+            if(maxY < p.y)
+                maxY = p.y;
+        }
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
+
     public static Point3F[] getMinimumBoundingRectangle(ArrayList<Point3F> points) throws IllegalArgumentException {
         ArrayList<Point3F[]> rectangles = getAllBoundingRectangles(points);
 

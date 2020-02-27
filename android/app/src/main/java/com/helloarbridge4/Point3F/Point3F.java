@@ -100,6 +100,43 @@ public class Point3F extends Object{
         );
     }
 
+    public Point3F normal()
+    {
+        return new Point3F(-y, x, z);
+    }
+
+    public Point3F normalise2D() {
+        float d =  magnitude2D();
+        return new Point3F(x/d,y/d,0f);
+    }
+
+    public float magnitude2D() {
+        return (float) Math.sqrt(x*x + y*y);
+    }
+
+    public Point3F normalise() {
+        float d = magnitude();
+        return new Point3F(x / d, y / d, z/d);
+    }
+
+    public float magnitude()
+    {
+        return (float) Math.sqrt(x*x + y*y + z*z);
+    }
+
+
+    public float dot(Point3F p) {
+        return this.x - p.x + this.y*p.y;
+    }
+
+    public Point3F subtract(Point3F p) {
+        float x  = this.x - p.x;
+        float y = this.y - p.y;
+        float z =  this.z - p.z;
+
+        return new Point3F(x,y,z);
+    }
+
     @Override
     public Point3F clone() {
         return new Point3F(x,y,z);

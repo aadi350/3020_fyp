@@ -1,4 +1,6 @@
 package com.helloarbridge4.Point3F;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.google.ar.sceneform.math.Vector3;
@@ -12,6 +14,7 @@ public class PointFilter {
     private static final float Z_THRESH = 0.2f;
     private static final float POINT_CONFIDENCE_MIN = 0.5f;
     private static final Vector3 REGION_LIMITS = new Vector3(0.5f,0.5f,0.5f);
+    private static final String TAG = "PointFilter";
 
     public static boolean filterSingleByConfidence(Point3F point) {
         if (point == null) throw new NullPointerException();
@@ -20,8 +23,14 @@ public class PointFilter {
     }
 
     public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 node) {
+
         List<Point3F> confPoints = filterByConfidence(pointBuffer);
+
         ArrayList<Point3F> closePoints = filterByRegion(confPoints, node);
+//        Log.d(TAG,"getValidPoints");
+        for (Point3F p : closePoints) {
+            Log.d(TAG, p.toString());
+        }
         ArrayList<Point3F> filteredPoints = filterGround(closePoints,node);
         return filteredPoints;
     }

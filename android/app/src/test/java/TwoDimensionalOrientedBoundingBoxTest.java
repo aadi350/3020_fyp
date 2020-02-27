@@ -1,20 +1,23 @@
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.SizeCheck.TwoDimensionalOrientedBoundingBox;
-import com.mathworks.toolbox.javabuilder.MWException;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
 
 public class TwoDimensionalOrientedBoundingBoxTest {
+    private static final int RECUR_COUNT = 15;
+    private final int LOOP_COUNT = 25;
+    private final int POINT_COUNT = 25;
 
-    final int POINT_COUNT = 10;
-    final float MAX = 5f;
-    final float MIN = -5f;
 
 
     @Test
@@ -55,46 +58,66 @@ public class TwoDimensionalOrientedBoundingBoxTest {
     @Test
     public void getMinimumBoundingRectangleTest() {
         ArrayList<Point3F> pointList = new ArrayList<>(generatePoints());
-        pointList.addAll(generatePoints());
-        try {
-            ArrayList<Point3F[]> rectList = TwoDimensionalOrientedBoundingBox.getAllBoundingRectangles(pointList);
-            Point3F[] rectMin = TwoDimensionalOrientedBoundingBox.getMinimumBoundingRectangle(pointList);
-            double minArea = Double.MAX_VALUE;
-            for (Point3F[] rect : rectList) {
-                if (TwoDimensionalOrientedBoundingBox.getArea(rect) < minArea) {
-                    minArea = TwoDimensionalOrientedBoundingBox.getArea(rect);
-                }
+        for (int i = 1; i  <= RECUR_COUNT;  i++) {
+            pointList.addAll(generatePoints());
+            try {
+                Point3F[] rectMin = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
+
+                ArrayList<Point3F> OBBList = new ArrayList<>();
+                Collections.addAll(OBBList,rectMin);
+
+                final String filePathPoints = "C:\\Users\\aaadi\\Google Drive\\Documents\\School Work\\Year 4\\ECNG 3020\\points" +  RECUR_COUNT +".txt";
+                final String filePathOBB = "C:\\Users\\aaadi\\Google Drive\\Documents\\School Work\\Year 4\\ECNG 3020\\OBB" + RECUR_COUNT + ".txt";
+                writeFile(pointList,filePathPoints);
+                writeFile(OBBList,filePathOBB);
+
+                double minAreaActual = TwoDimensionalOrientedBoundingBox.getArea(rectMin);
+
+                //Assert.assertEquals(minArea, minAreaActual,0.15);
+
+            } catch (ArrayIndexOutOfBoundsException e) {
+                System.out.println(e.getLocalizedMessage());
+            } catch (IndexOutOfBoundsException e) {
+                System.out.println(e.getLocalizedMessage());
             }
-            double minAreaActual = TwoDimensionalOrientedBoundingBox.getArea(rectMin);
-
-            Assert.assertEquals(minArea, minAreaActual,0.1);
-
-        } catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println(e.getLocalizedMessage());
-        } catch (IndexOutOfBoundsException e) {
-            System.out.println(e.getLocalizedMessage());
         }
 
     }
 
 
     public ArrayList<Point3F> generatePoints() {
-        ArrayList<Point3F> pointList = new ArrayList<Point3F>(POINT_COUNT);
-
-        for (int i = 0 ; i < POINT_COUNT; i++) {
+        ArrayList<Point3F> pointList = new ArrayList<>();
+        for (int i = 0; i < POINT_COUNT; i++) {
             pointList.add(new Point3F(
-                    generateRandomInRange(MAX,MIN),
-                    generateRandomInRange(MAX,MIN),
-                    generateRandomInRange(MAX,MIN)
+                    getRandom(),
+                    getRandom(),
+                    getRandom()
             ));
         }
-
         return pointList;
     }
 
-    float generateRandomInRange(Float max, Float min) {
+    private float getRandom() {
+
+        final float MIN = 2f;
+        final float MAX = 4f;
+
         Random rd = new Random();
-        return (min + rd.nextFloat()*(max - min));
+        return MIN + rd.nextFloat()*(MAX - MIN);
+    }
+
+    public static void writeFile(ArrayList<Point3F> pointList, String filePath) {
+        try {
+
+            BufferedWriter out = new BufferedWriter(new FileWriter(filePath, false));
+
+            for (Point3F point : pointList) {
+                out.write(point.toString());
+            }
+            out.close();
+        }catch (IOException e) {
+            System.out.println(e.getLocalizedMessage());
+        }
     }
 
 
