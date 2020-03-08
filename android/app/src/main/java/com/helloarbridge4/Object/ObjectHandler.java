@@ -8,7 +8,7 @@ import com.helloarbridge4.Builder.CarryOnBuilder;
 import com.helloarbridge4.Builder.DuffelBuilder;
 import com.helloarbridge4.Builder.PersonalItemBuilder;
 import com.helloarbridge4.Builder.objectBuilder;
-import com.helloarbridge4.SizeCheck.FitCodes;
+import com.helloarbridge4.FitCodes;
 
 public abstract class ObjectHandler {
 

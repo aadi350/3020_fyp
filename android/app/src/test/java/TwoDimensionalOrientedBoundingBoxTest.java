@@ -14,7 +14,7 @@ import java.util.Random;
 
 
 public class TwoDimensionalOrientedBoundingBoxTest {
-    private static final int RECUR_COUNT = 15;
+    private static final int RECUR_COUNT = 300;
     private final int LOOP_COUNT = 25;
     private final int POINT_COUNT = 25;
 

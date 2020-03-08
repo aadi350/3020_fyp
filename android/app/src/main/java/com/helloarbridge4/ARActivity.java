@@ -1,6 +1,5 @@
 package com.helloarbridge4;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -12,46 +11,42 @@ import android.view.MotionEvent;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
 import com.google.ar.core.Anchor;
-import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
-import com.google.ar.core.LightEstimate;
 import com.google.ar.core.Plane;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
-import com.google.ar.core.TrackingState;
-import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
-import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+import com.google.ar.core.exceptions.CameraNotAvailableException;
+import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
-import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
-import com.google.ar.sceneform.rendering.Light;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import com.helloarbridge4.Object.ObjectCodes;
-import com.helloarbridge4.SizeCheck.ColourChangeHandler;
-import com.helloarbridge4.SizeCheck.FitCodes;
+import com.helloarbridge4.Render.PointCloudRenderer;
+import com.helloarbridge4.ColourChange.ColourChangeHandler;
 import com.helloarbridge4.SizeCheck.SizeCheckHandler;
 
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 
-public class ARActivity extends AppCompatActivity{
+public class ARActivity extends AppCompatActivity {
     private static final String SCN_TAG = "OnSceneUpdate";
-    private static final String TAG = ARActivity.class.getSimpleName();
+    private static final String TAG = "ARActivity";
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final int FRAME_COUNT_THRESH = 60;
     private static final float LIGHT_THRESH = 0.3f;
@@ -63,15 +58,18 @@ public class ARActivity extends AppCompatActivity{
     private ArFragment arFragment;
     private ImageButton removeObjects;
     private TextView onScreenText;
+    private ArSceneView arSceneView;
+    private boolean cameraPermissionRequested;
     boolean objectPlaced = false;
 
     private ColourChangeHandler colourChangeHandler;
     private TransformableNode node;
+    private Pose planePose;
 
     private int frames = 0;
     private int framesStart = 0;
 
-
+    private PointCloudRenderer pointCloudRenderer;
     private SizeCheckHandler sizeHandler;
     private ObjectCodes currentModel;
 
@@ -79,113 +77,123 @@ public class ARActivity extends AppCompatActivity{
     private Vector3 anchorPosition;
     private RadioGroup radioGroup;
     private AnchorNode anchorNode;
+    private List<Float[]> positions3D;
+    PointCloudVisualiser pcVis;
 
     static TextView debugText_height, debugText_width, debugText_length;
 
     private Session session;
     private Config config;
-    private Scene scene;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-            //RN Bridge
-            Intent intent = getIntent();
-            sizeHandler = new SizeCheckHandler();
-            String message = intent.getStringExtra(MainActivity.REQ_MSG);
-            super.onCreate(savedInstanceState);
+        //RN Bridge
+        Intent intent = getIntent();
 
-            if (!checkIsSupportedDeviceOrFinish(this)) {
-                return;
-            }
-            //Perimssions handling
-        try {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[] {Manifest.permission.CAMERA},
-                    0
+        String message = intent.getStringExtra(MainActivity.REQ_MSG);
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.ar_layout);
+        positions3D = new ArrayList<>();
+        sizeHandler = new SizeCheckHandler();
+
+        //connecting views
+
+        radioGroup = findViewById(R.id.change_type);
+        onScreenText = findViewById(R.id.onScreenText);
+        //removeObjects = findViewById(R.id.removeObjects);
+
+        //TODO remove
+        debugText_height = findViewById(R.id.debugText_height);
+        debugText_width = findViewById(R.id.debugText_width);
+        debugText_length = findViewById(R.id.debugText_length);
+        //end remove
+
+        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+        //findViewById(R.id.removeObjects).setOnClickListener(this::measure);
+        colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
+
+
+        arFragment.setOnTapArPlaneListener(
+            (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
+                if(plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING) {
+                    return;
+                }
+                planePose = plane.getCenterPose();
+
+                measure();
+                disablePlaneDetection();
+
+
+                if (!objectPlaced) {
+                    initAnchor(hitResult);
+                    createNode(arFragment);
+                    colourChangeHandler.setAnchorNode(anchorNode);
+                    colourChangeHandler.setTransformableNode(node);
+
+                    setModel(radioGroup.getCheckedRadioButtonId());
+                    objectPlaced = true;
+                }
+            });
+
+
+
+
+        //buttons
+        radioGroup.setOnCheckedChangeListener(
+        (group, checkedId) -> {
+            setModel(checkedId);
+        }
             );
 
-            ArCoreApk.Availability ArCoreSupported = ArCoreApk.getInstance().checkAvailability(this);
-            ArCoreApk.getInstance().requestInstall(this, ArCoreSupported.isSupported());
-
-            } catch (UnavailableUserDeclinedInstallationException e) {
-                Log.e(TAG, e.getLocalizedMessage());
-            } catch (UnavailableDeviceNotCompatibleException e) {
-                Log.e(TAG, e.getLocalizedMessage());
-            }
-
-
-            //connecting views
-            setContentView(R.layout.ar_layout);
-            radioGroup = findViewById(R.id.change_type);
-            onScreenText = findViewById(R.id.onScreenText);
-            removeObjects = findViewById(R.id.removeObjects);
-
-            //TODO remove
-            debugText_height = findViewById(R.id.debugText_height);
-            debugText_width = findViewById(R.id.debugText_width);
-            debugText_length = findViewById(R.id.debugText_length);
-            //end remove
-
-            colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
-
-            initFragment();
-            initSession();
 //
-//                Frame frame = arFragment.getArSceneView().getArFrame();
-//                LightEstimate lightEstimate = frame.getLightEstimate();
-//                Float pixelIntensity = lightEstimate.getPixelIntensity();
+//        removeObjects.setOnClickListener(
+//                w -> {
+//                    if (objectPlaced) {
+//                        objectPlaced = false;
+//                        framesStart = 0;
+//                        try {
+//                            removeAnchorNode(anchorNode);
+//                        } catch (NullPointerException e) {
+//                            Log.w(TAG, e.getLocalizedMessage());
+//                        }
+//                        radioGroup.clearCheck();
+//                    }
+//                }
+//        );
+    }
 
-
-                    arFragment.setOnTapArPlaneListener(
-                            (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                                if(plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING) {
-                                    return;
-                                }
-
-                                disablePlaneDetection();
-
-                                if (!objectPlaced) {
-                                    initAnchor(hitResult);
-                                    createNode(arFragment);
-
-                                    colourChangeHandler.setAnchorNode(anchorNode);
-                                    colourChangeHandler.setTransformableNode(node);
-
-                                    setModel(radioGroup.getCheckedRadioButtonId());
-                                    objectPlaced = true;
-                                }
-                            });
-
-                    arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
-
-                    radioGroup.setOnCheckedChangeListener(
-                            (group, checkedId) -> {
-                                setModel(checkedId);
-                            }
-
-                    );
-
-                    removeObjects.setOnClickListener(
-                            w -> {
-                                if (objectPlaced) {
-                                    objectPlaced = false;
-                                    framesStart = 0;
-                                    try {
-                                        removeAnchorNode(anchorNode);
-                                    } catch (NullPointerException e) {
-                                        Log.w(TAG, e.getLocalizedMessage());
-                                    }
-                                    radioGroup.clearCheck();
-                                }
-                            }
-                    );
-
+    private boolean scan = false;
+    public void measure() {
+        if (scan) {
+            scan = false;
+            return;
         }
 
 
+        if (arFragment.getArSceneView().getArFrame() == null) {
+            return;
+        }
+        // If ARCore is not tracking yet, then don't process anything.
+        if (arFragment.getArSceneView().getSession() == null) {
+            return;
+        }
 
-  private void removeAnchorNode(AnchorNode nodeToremove) throws NullPointerException {
+        scan = true;
+
+        //TODO remove
+        pcVis = new PointCloudVisualiser(getApplicationContext());
+        arFragment.getArSceneView().getScene().addChild(pcVis);
+        // If there is no frame then don't process anything.
+
+        arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
+
+    }
+
+
+
+
+    private void removeAnchorNode(AnchorNode nodeToremove) throws NullPointerException {
         //Remove an anchor node
         if (nodeToremove != null) {
             arFragment.getArSceneView().getScene().removeChild(nodeToremove);
@@ -219,7 +227,7 @@ public class ARActivity extends AppCompatActivity{
         // Create the Anchor at hit result
         Anchor anchor = hitResult.createAnchor();
         anchorNode = new AnchorNode(anchor);
-        anchorPosition = anchorNode.getLocalPosition();
+        anchorPosition = anchorNode.getWorldPosition();
         //attach arFragment to hitResult via anchorNode
         anchorNode.setParent(arFragment.getArSceneView().getScene());
     }
@@ -227,7 +235,8 @@ public class ARActivity extends AppCompatActivity{
     private void initFragment() {
         try {
             arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-            scene = arFragment.getArSceneView().getScene();
+            //TODO
+            //scene = arFragment.getArSceneView().getScene();
             //arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
         } catch (NullPointerException n){
             Log.wtf("arFragment", n.getMessage());
@@ -235,70 +244,61 @@ public class ARActivity extends AppCompatActivity{
     }
 
     private void initSession() {
-        try{
+        try {
             session = new Session(this);
             config = new Config(session);
             //config.setLightEstimationMode(Config.LightEstimationMode.AMBIENT_INTENSITY);
-            //config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
+            config.setPlaneFindingMode(Config.PlaneFindingMode.HORIZONTAL);
         } catch (Exception e) {
             Log.e(TAG, "session: " + e.getMessage());
         }
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
+        Log.d(TAG,"onSceneUpdate");
+        if (!scan) return;
 
-        frames++;
-        Log.d(SCN_TAG, String.valueOf(frames));
-        arFragment.onUpdate(frameTime);
-        disablePlaneDetection();
-
-        // If there is no frame then don't process anything.
-        if (arFragment.getArSceneView().getArFrame() == null) {
-            return;
-        }
-        // If ARCore is not tracking yet, then don't process anything.
-        if (arFragment.getArSceneView().getArFrame().getCamera().getTrackingState() != TrackingState.TRACKING) {
-            return;
-        }
-
-        try {
-            setOnScreenText(arFragment);
-        } catch (NullPointerException e) {
-            Log.e(TAG, e.getLocalizedMessage());
-        }
-
-
+        //disablePlaneDetection();
+        setOnScreenText(arFragment);
         Frame frame = arFragment.getArSceneView().getArFrame();
+        PointCloud pointCloud = frame.acquirePointCloud();
+        ArrayList<Float[]> pointCloudArrayList = new ArrayList<>();
 
+        //TODO remove (maybe)
+        pcVis.update(pointCloud);
 
-                if (nodeNotNull() && objectPlaced) {
-                    FitCodes fits = FitCodes.NONE;
-                    try {
+        FloatBuffer points = pointCloud.getPoints();
 
-                        PointCloud pointCloud = frame.acquirePointCloud();
-                        FloatBuffer pointBuffer = pointCloud.getPoints();
-                        Vector3 anchorNodePosition = anchorNode.getWorldPosition();
-                        fits = sizeHandler.checkIfFits(currentModel, anchorNodePosition, pointBuffer);
-                    } catch (Exception e) {
-                        Log.e(TAG,e.getLocalizedMessage());
-                    }
+        Log.i("POINT:","" + points.remaining());
 
-                    colourChangeHandler.setObject(fits);
-                    //TODO remove
-                    updateDebugText(
-                                String.valueOf(sizeHandler.getBoxLength()),
-                                String.valueOf(sizeHandler.getBoxWidth()),
-                                String.valueOf(sizeHandler.getHighZ())
-                    );
+        FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,planePose);
+        colourChangeHandler.setObject(fitCode);
+
+        for (int i = 0; i < points.limit(); i+=4) {
+                pointCloudArrayList.add(new Float[] {
+                    points.get(i),      //x
+                    points.get(i+2),    //z
+                    points.get(i+1)     //y
                 }
+            );
+
+                Vector3 a = anchorNode.getWorldPosition();
+                Log.d("ANCHOR", anchorNode.getWorldRotation().toString());
+                String aPos = a.x + " " + a.y + " " + a.z;
+                if (points.get(i+3) > 0.8) {
+                    Log.d("PT:",points.get(i) + " " + points.get(i + 1) + " " + points.get(i + 2) + " " + aPos);
+                }
+                pointCloud.release();
+        }
+
+
+
 
 
     }
-
     private boolean nodeNotNull() {
         return (node != null);
     }
-
 
 
     private void setModel(int toggleId) {
@@ -355,6 +355,54 @@ public class ARActivity extends AppCompatActivity{
         return true;
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (arSceneView == null) {
+            return;
+        }
+
+        if (arSceneView.getSession() == null) {
+            // If the session wasn't created yet, don't resume rendering.
+            // This can happen if ARCore needs to be updated or permissions are not granted yet.
+            try {
+                Config.LightEstimationMode lightEstimationMode =
+                        Config.LightEstimationMode.ENVIRONMENTAL_HDR;
+                Session session = new Session(this);
+
+                Config config = new Config(session);
+                config.setUpdateMode(Config.UpdateMode.LATEST_CAMERA_IMAGE);
+                config.setLightEstimationMode(lightEstimationMode);
+                session.configure(config);
+                if (session == null) {
+                    cameraPermissionRequested = true;
+                    return;
+                } else {
+                    arSceneView.setupSession(session);
+                }
+            } catch (UnavailableException e) {
+                Log.e(TAG,e.getMessage());
+            }
+        }
+
+        try {
+            arSceneView.resume();
+        } catch (CameraNotAvailableException ex) {
+            Log.e(TAG,"No Camera");
+            finish();
+            return;
+        }
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (arSceneView != null) {
+            arSceneView.pause();
+        }
+    }
+
     public class CustomVisualizer implements SelectionVisualizer {
         @Override
         public void applySelectionVisual(BaseTransformableNode node) {}
@@ -391,6 +439,21 @@ public class ARActivity extends AppCompatActivity{
         }
 
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

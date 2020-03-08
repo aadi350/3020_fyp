@@ -1,4 +1,4 @@
-package com.helloarbridge4.SizeCheck;
+package com.helloarbridge4;
 
 public enum FitCodes {
     FIT,
