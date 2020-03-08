@@ -2,10 +2,12 @@ package com.helloarbridge4.SizeCheck;
 
 import android.util.Log;
 
+import com.google.ar.core.Pose;
 import com.google.ar.sceneform.math.Vector3;
 import com.helloarbridge4.Builder.CarryOnBuilder;
 import com.helloarbridge4.Builder.DuffelBuilder;
 import com.helloarbridge4.Builder.PersonalItemBuilder;
+import com.helloarbridge4.FitCodes;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.Point3F.PointFilter;
@@ -14,43 +16,40 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
 public class SizeCheckHandler {
-    private final int POINT_LOWER_THRESH = 100;
+    private final int POINT_LOWER_THRESH = 25;
     private final String TAG = "SizeCheckHandler";
-    private final String RECT_TAG = "Rectangle";
     private Vector3 objectSize = new Vector3();
-    private Vector3 nodePosition;
     private Point3F[] boundingBox;
     private Vector3 storedObjectPosition = new Vector3(Vector3.zero());
     private ArrayList<Point3F> pointList = new ArrayList<>();
     private float highZ;
 
 
-    public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer) {
-        if (pointBuffer == null) return null;
+    public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Pose planePose) {
+        if (pointBuffer == null || nodePosition == null || planePose == null)  return FitCodes.NONE;
         Log.d(TAG, "checkIfFits()");
         QuickSort q = new QuickSort();
-
         Vector3 actualSize = new Vector3(Vector3.zero());
 
         //Resets object measurement to accomodate new object position
-        boolean newPosition = emptyPointListOnMove(nodePosition);
-        if (newPosition) return FitCodes.NONE;
+//        boolean newPosition = emptyPointListOnMove(nodePosition);
+//        if (newPosition) return FitCodes.NONE;
 
         //Ensures there are points to check and filters Points in PointCloud by distance to
         //placed object and object confidence score
 
-        if (!pointBuffer.hasRemaining()) return null;
-        getValidPoints(pointBuffer, storedObjectPosition);
+        if (!pointBuffer.hasRemaining()) return FitCodes.NONE;
+        getValidPoints(pointBuffer, nodePosition, planePose);
 
         if (pointList.size() < POINT_LOWER_THRESH) return null;
 
         try {
             boundingBox = TwoDimensionalOrientedBoundingBox.getMinimumBoundingRectangle(pointList);
-            highZ = q.getHighestZ(this.pointList);// - nodePosition.z;
+            //TODO refactor highZ to highY
+            highZ = q.getHighestZ(this.pointList) - planePose.tz();
 
-            if (boundingBox.length != 4)return null;
+            actualSize = new Vector3(getBoxLength(boundingBox), getBoxWidth(boundingBox), highZ);
 
-            actualSize = new Vector3(getBoxLength(), getBoxWidth(), highZ);
             switch (objectCode) {
                 case CARRYON:
                     objectSize = CarryOnBuilder.getObjectSize();
@@ -64,7 +63,7 @@ public class SizeCheckHandler {
             Log.w(TAG, i.getLocalizedMessage());
         }
 
-        if (actualSize.equals(Vector3.zero())) return null;
+        if (actualSize.equals(Vector3.zero())) return FitCodes.NONE;
 
 
         boolean fits = compareLimits(objectSize, actualSize);
@@ -72,7 +71,7 @@ public class SizeCheckHandler {
     }
 
 
-    private void getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition) {
+    private void getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition, Pose planePose) {
 
         if (pointBuffer == null) {
             Log.w(TAG, "PointBuffer NULL");
@@ -83,7 +82,7 @@ public class SizeCheckHandler {
             return;
         }
         Log.d(TAG,"Buffer: " + pointBuffer.remaining());
-        pointList.addAll(PointFilter.getValidPoints(pointBuffer,nodePosition));
+        pointList.addAll(PointFilter.getValidPoints(pointBuffer,nodePosition,planePose));
         Log.d(TAG,"PointList Size: " + pointList.size());
     }
 

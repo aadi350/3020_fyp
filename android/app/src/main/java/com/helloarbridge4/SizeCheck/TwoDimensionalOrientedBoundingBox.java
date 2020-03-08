@@ -1,7 +1,5 @@
 package com.helloarbridge4.SizeCheck;
 
-import android.util.Log;
-
 import com.helloarbridge4.Point3F.Point3F;
 
 import java.util.ArrayList;
@@ -24,12 +22,12 @@ public final class TwoDimensionalOrientedBoundingBox {
     public static Point3F[] getMinimumBoundingRectangle(Polygon polygon) {
         Rectangle[] rects = new Rectangle[polygon.edgeCount()];
 
-        for(int i=0;i<polygon.edgeCount();i++)
+        for(int i = 0; i < polygon.edgeCount(); i++)
         {
             Point3F edge = polygon.getEdge(i);
             //Rotate the polygon so that the current edge is parallel to a major axis
-            //The y-Axis in this use case
-            double theta = Math.acos(edge.normalise2D().y);
+            //The z-Axis in this use case
+            double theta = Math.acos(edge.normalise2D().z);
             polygon.rotate(theta);
             //Calculate a bounding box
             rects[i] = boundingBox(polygon);
@@ -41,7 +39,7 @@ public final class TwoDimensionalOrientedBoundingBox {
         Rectangle box = rects[0];
 
         //Find the bounding box with the smallest area, this is the minimum bounding box
-        for(int i=0;i<rects.length;i++)
+        for(int i = 0 ;i < rects.length; i++)
         {
             double area = rects[i].area();
             if(area < minArea)
@@ -62,9 +60,9 @@ public final class TwoDimensionalOrientedBoundingBox {
     public static Rectangle boundingBox(Polygon polygon)
     {
         float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
+        float minZ = Float.MAX_VALUE;
         float maxX = Float.MIN_VALUE;
-        float maxY = Float.MIN_VALUE;
+        float maxZ = Float.MIN_VALUE;
 
         for(int i=0;i<polygon.pointCount();i++)
         {
@@ -73,12 +71,12 @@ public final class TwoDimensionalOrientedBoundingBox {
                 minX = p.x;
             if(maxX < p.x)
                 maxX = p.x;
-            if(minY > p.y)
-                minY = p.y;
-            if(maxY < p.y)
-                maxY = p.y;
+            if(minZ > p.z)
+                minZ = p.z;
+            if(maxZ < p.z)
+                maxZ = p.z;
         }
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+        return new Rectangle(minX, minZ, maxX - minX, maxZ - minZ);
     }
 
     public static Point3F[] getMinimumBoundingRectangle(ArrayList<Point3F> points) throws IllegalArgumentException {
@@ -166,16 +164,16 @@ public final class TwoDimensionalOrientedBoundingBox {
 
             switch(corner) {
                 case UPPER_RIGHT:
-                    change = (temp.x > point.x || (temp.x == point.x && temp.y > point.y));
+                    change = (temp.x > point.x || (temp.x == point.x && temp.z > point.z));
                     break;
                 case UPPER_LEFT:
-                    change = (temp.y > point.y || (temp.y == point.y && temp.x < point.x));
+                    change = (temp.z > point.z || (temp.z == point.z && temp.x < point.x));
                     break;
                 case LOWER_LEFT:
-                    change = (temp.x < point.x || (temp.x == point.x && temp.y < point.y));
+                    change = (temp.x < point.x || (temp.x == point.x && temp.z < point.z));
                     break;
                 case LOWER_RIGHT:
-                    change = (temp.y < point.y || (temp.y == point.y && temp.x > point.x));
+                    change = (temp.z < point.z || (temp.z == point.z && temp.x > point.x));
                     break;
             }
 
@@ -191,13 +189,13 @@ public final class TwoDimensionalOrientedBoundingBox {
     public static double getArea(Point3F[] rectangle) {
 
         double deltaXAB = rectangle[0].x - rectangle[1].x;
-        double deltaYAB = rectangle[0].y - rectangle[1].y;
+        double deltaZAB = rectangle[0].z - rectangle[1].z;
 
         double deltaXBC = rectangle[1].x - rectangle[2].x;
-        double deltaYBC = rectangle[1].y - rectangle[2].y;
+        double deltaZBC = rectangle[1].z - rectangle[2].z;
 
-        double lengthAB = Math.sqrt((deltaXAB * deltaXAB) + (deltaYAB * deltaYAB));
-        double lengthBC = Math.sqrt((deltaXBC * deltaXBC) + (deltaYBC * deltaYBC));
+        double lengthAB = Math.sqrt((deltaXAB * deltaXAB) + (deltaZAB * deltaZAB));
+        double lengthBC = Math.sqrt((deltaXBC * deltaXBC) + (deltaZBC * deltaZBC));
 
         return lengthAB * lengthBC;
     }
@@ -224,9 +222,9 @@ public final class TwoDimensionalOrientedBoundingBox {
             Point3F p2 = convexHull.get((pointIndex + 1) % convexHull.size());
 
             float deltaX = p2.x - p1.x;
-            float deltaY = p2.y - p1.y;
+            float deltaZ = p2.z - p1.z;
 
-            float angle = (float) (Math.atan2(deltaY, deltaX) * 180 / Math.PI);
+            float angle = (float) (Math.atan2(deltaZ, deltaX) * 180 / Math.PI);
 
             return angle < 0 ? 360 + angle : angle;
         }
@@ -235,7 +233,7 @@ public final class TwoDimensionalOrientedBoundingBox {
 
             Point3F p = convexHull.get(pointIndex);
 
-            return p.y - (getSlope() * p.x);
+            return p.x - (getSlope() * p.x);
         }
 
         float getDeltaAngleNextPoint() {
@@ -251,8 +249,8 @@ public final class TwoDimensionalOrientedBoundingBox {
 
             // the x-intercept of 'this' and 'that': x = ((c2 - c1) / (m1 - m2))
             float x;
-            // the y-intercept of 'this' and 'that', given 'x': (m*x) + c
-            float y;
+            // the z-intercept of 'this' and 'that', given 'x': (m*x) + c
+            float z;
 
             if(this.isVertical()) {
                 x = convexHull.get(pointIndex).x;
@@ -265,16 +263,16 @@ public final class TwoDimensionalOrientedBoundingBox {
             }
 
             if(this.isVertical()) {
-                y = that.getConstant();
+                z = that.getConstant();
             }
             else if(this.isHorizontal()) {
-                y = this.getConstant();
+                z = this.getConstant();
             }
             else {
-                y = (this.getSlope() * x) + this.getConstant();
+                z = (this.getSlope() * x) + this.getConstant();
             }
 
-            return new Point3F(x, y,0);
+            return new Point3F(x, z,0);
         }
 
         float getSlope() {
@@ -365,8 +363,8 @@ public final class TwoDimensionalOrientedBoundingBox {
                         return 0;
                     }
 
-                    double thetaA = Math.atan2((long) a.y - lowest.y, (long) a.x - lowest.x);
-                    double thetaB = Math.atan2((long) b.y - lowest.y, (long) b.x - lowest.x);
+                    double thetaA = Math.atan2((long) a.z- lowest.z, (long) a.x - lowest.x);
+                    double thetaB = Math.atan2((long) b.z - lowest.z, (long) b.x - lowest.x);
 
                     if (thetaA < thetaB) {
                         return -1;
@@ -374,9 +372,9 @@ public final class TwoDimensionalOrientedBoundingBox {
                         return 1;
                     } else {
                         double distanceA = Math.sqrt((((long) lowest.x - a.x) * ((long) lowest.x - a.x)) +
-                                (((long) lowest.y - a.y) * ((long) lowest.y - a.y)));
+                                (((long) lowest.z - a.z) * ((long) lowest.z - a.z)));
                         double distanceB = Math.sqrt((((long) lowest.x - b.x) * ((long) lowest.x - b.x)) +
-                                (((long) lowest.y - b.y) * ((long) lowest.y - b.y)));
+                                (((long) lowest.z - b.z) * ((long) lowest.z - b.z)));
 
                         if (distanceA < distanceB) {
                             return -1;
@@ -414,7 +412,7 @@ public final class TwoDimensionalOrientedBoundingBox {
 
                 Point3F temp = points.get(i);
 
-                if(temp.y < lowest.y || (temp.y == lowest.y && temp.x < lowest.x)) {
+                if(temp.z < lowest.z || (temp.z == lowest.z && temp.x < lowest.x)) {
                     lowest = temp;
                 }
             }
@@ -423,7 +421,7 @@ public final class TwoDimensionalOrientedBoundingBox {
         }
 
         public static Scan.Turn getTurn(Point3F a, Point3F b, Point3F c) {
-            float crossProduct = ((b.x - a.x)*(c.y - a.y)) - ((b.y-a.y)*(c.x-a.x));
+            float crossProduct = ((b.x - a.x)*(c.z - a.z)) - ((b.z-a.z)*(c.x-a.x));
 
             if (crossProduct > 0) {
                 return Scan.Turn.CCW;

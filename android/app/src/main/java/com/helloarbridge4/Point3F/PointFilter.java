@@ -21,6 +21,7 @@ public class PointFilter {
     //parent method to filter FloatBuffer of raw point data
         List<Point3F> confPoints = filterByConfidence(pointBuffer);
         ArrayList<Point3F> closePoints = filterByRegion(confPoints, node);
+        //TODO add filterByDistanceToCamera
         ArrayList<Point3F> filteredPoints = filterGround(closePoints,planePose);
         return filteredPoints;
     }
