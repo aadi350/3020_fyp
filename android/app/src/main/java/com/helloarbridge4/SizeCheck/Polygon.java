@@ -20,18 +20,18 @@ public class Polygon {
 
     protected void calculateCenter() {
         double x = 0;
-        double y = 0;
+        double z = 0;
         int n = points.size();
 
         for(int i=0;i<n;i++)
         {
             Point3F p = points.get(i);
             x += p.x;
-            y += p.y;
+            z += p.z;
         }
 
         center.x = (float) x / n;
-        center.y = (float) y / n;
+        center.z = (float) z / n;
     }
 
     public void addPoint(Point3F p) {
@@ -61,18 +61,18 @@ public class Polygon {
     protected void calcCenter()
     {
         double x = 0;
-        double y = 0;
+        double z = 0;
         int n = points.size();
 
-        for(int i=0;i<n;i++)
+        for(int i = 0; i < n; i++)
         {
             Point3F p = points.get(i);
             x += p.x;
-            y += p.y;
+            z += p.z;
         }
 
         center.x = (float) x / n;
-        center.y = (float) y / n;
+        center.z = (float) z / n;
     }
 
     public int pointCount()
@@ -98,7 +98,7 @@ public class Polygon {
 
     public boolean contains(Point3F p)
     {
-        for(int i=0;i<pointCount();i++)
+        for(int i = 0; i < pointCount(); i++)
         {
             Point3F normal = getEdge(i).normal();
             p = p.subtract(center);
@@ -116,18 +116,18 @@ public class Polygon {
         {
             Point3F p = points.get(i);
             double x = p.x;
-            double y = p.y;
+            double z = p.z;
             x -= pivot.x;
-            y -= pivot.y;
+            z -= pivot.z;
             double tx = x;
             double sinTheta = Math.sin(theta);
             double cosTheta = Math.cos(theta);
-            x = x * cosTheta - y * sinTheta;
-            y = tx * sinTheta + y * cosTheta;
+            x = x * cosTheta - z * sinTheta;
+            z = tx * sinTheta + z * cosTheta;
             x += pivot.x;
-            y += pivot.y;
+            z += pivot.z;
             p.x = (float) x;
-            p.y = (float) y;
+            p.z = (float) z;
         }
     }
 }
