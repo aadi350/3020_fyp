@@ -1,4 +1,4 @@
-package com.helloarbridge4.SizeCheck;
+package com.helloarbridge4.ColourChange;
 
 import android.content.Context;
 
@@ -9,6 +9,7 @@ import com.helloarbridge4.Object.DuffelHandler;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Object.ObjectHandler;
 import com.helloarbridge4.Object.PersonalItemHandler;
+import com.helloarbridge4.FitCodes;
 
 public class ColourChangeHandler {
     private ObjectCodes currentObject;
