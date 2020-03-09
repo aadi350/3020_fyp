@@ -11,11 +11,11 @@ public class QuickHull {
 
     @SuppressWarnings("unchecked")
     public static ArrayList<Point3F> getConvexHull(ArrayList<Point3F> points) throws NullPointerException {
+        final ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
         if (points.size() <= 4) {
             return (ArrayList) points.clone();
         }
 
-        final ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
 
         int minPoint = -1, maxPoint = -1;
         float minX = Float.MAX_VALUE;
@@ -116,11 +116,6 @@ public class QuickHull {
 
     public static int pointLocation(Point3F A, Point3F B, Point3F P) {
         float cp1 = (B.x - A.x) * (P.z - A.z) - (B.z - A.z) * (P.x - A.x);
-        if (cp1 > 0)
-            return 1;
-        else if (cp1 == 0)
-            return 0;
-        else
-            return -1;
+        return (cp1 > 0) ? 1 : -1;
     }
 }

@@ -100,18 +100,23 @@ public class Point3F extends Object{
         );
     }
 
+    public float angle(Point3F p)
+    {
+        return (float) Math.acos(this.normalise2D().dot(p.normalise2D()));
+    }
+
     public Point3F normal()
     {
-        return new Point3F(-y, x, z);
+        return new Point3F(-z, y, x);
     }
 
     public Point3F normalise2D() {
         float d =  magnitude2D();
-        return new Point3F(x/d,y/d,0f);
+        return new Point3F(x/d,0f,z/d);
     }
 
     public float magnitude2D() {
-        return (float) Math.sqrt(x*x + y*y);
+        return (float) Math.sqrt(x*x + z*z);
     }
 
     public Point3F normalise() {
@@ -126,7 +131,7 @@ public class Point3F extends Object{
 
 
     public float dot(Point3F p) {
-        return this.x - p.x + this.y*p.y;
+        return (this.x*p.x + this.z*p.z);
     }
 
     public Point3F subtract(Point3F p) {

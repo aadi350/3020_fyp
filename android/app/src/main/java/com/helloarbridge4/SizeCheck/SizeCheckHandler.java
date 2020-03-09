@@ -44,7 +44,7 @@ public class SizeCheckHandler {
         if (pointList.size() < POINT_LOWER_THRESH) return null;
 
         try {
-            boundingBox = TwoDimensionalOrientedBoundingBox.getMinimumBoundingRectangle(pointList);
+            boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
             //TODO refactor highZ to highY
             highZ = q.getHighestZ(this.pointList) - planePose.tz();
 
