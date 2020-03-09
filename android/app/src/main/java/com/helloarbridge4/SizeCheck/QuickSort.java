@@ -14,7 +14,7 @@ public class QuickSort {
         ArrayList<Point3F> sortedList = sortByHeight(pointList);
         float highZ = 0.0f;
         try {
-            highZ = sortedList.get(sortedList.size() - 1).z;
+            highZ = sortedList.get(sortedList.size() - 1).y;
         } catch (ArrayIndexOutOfBoundsException e) {
             Log.e(TAG, e.getLocalizedMessage());
         }
@@ -49,12 +49,12 @@ public class QuickSort {
     }
 
     private int partition(Point3F[] arr, int low, int high) {
-        float pivot = arr[high].z;
+        float pivot = arr[high].y;
 
         int i = (low - 1);
 
         for (int j = low; j <= high; j++) {
-            if (arr[j].z < pivot) {
+            if (arr[j].y < pivot) {
                 i++;
                 Point3F temp = arr[i];
                 arr[i] = arr[j];

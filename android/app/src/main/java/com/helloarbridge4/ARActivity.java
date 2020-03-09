@@ -98,7 +98,6 @@ public class ARActivity extends AppCompatActivity {
         sizeHandler = new SizeCheckHandler();
 
         //connecting views
-
         radioGroup = findViewById(R.id.change_type);
         onScreenText = findViewById(R.id.onScreenText);
         //removeObjects = findViewById(R.id.removeObjects);
