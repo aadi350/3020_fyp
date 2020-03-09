@@ -33,7 +33,7 @@ public class QuickSortTest {
           ArrayList<Point3F> sortedList = q.sortByHeight(pointList);
 
           for (int i = 0; i < NUM_POINTS - 1; i++) {
-              Assert.assertTrue(sortedList.get(i).z <= sortedList.get(i + 1).z);
+              Assert.assertTrue(sortedList.get(i).y <= sortedList.get(i + 1).y);
           }
       }
     }
@@ -63,7 +63,7 @@ public class QuickSortTest {
                     MIN + rd.nextFloat() * (MAX - MIN)
             );
             pointList.add(pointTemp);
-            if (highZ < pointTemp.z) highZ = pointTemp.z;
+            if (highZ < pointTemp.y) highZ = pointTemp.y;
         }
 
         QuickSort q = new QuickSort();

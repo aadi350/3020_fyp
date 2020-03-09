@@ -11,6 +11,7 @@ import com.helloarbridge4.FitCodes;
 import com.helloarbridge4.Object.ObjectCodes;
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.Point3F.PointFilter;
+import com.helloarbridge4.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundingBox;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class SizeCheckHandler {
         try {
             boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
             //TODO refactor highZ to highY
-            highZ = q.getHighestZ(this.pointList) - planePose.tz();
+            highZ = q.getHighestZ(this.pointList) - planePose.ty();
 
             actualSize = new Vector3(getBoxLength(boundingBox), getBoxWidth(boundingBox), highZ);
 
@@ -132,13 +133,13 @@ public class SizeCheckHandler {
 
         float xOne = boundingBox[0].x;
         float xTwo = boundingBox[3].x;
-        float yOne = boundingBox[0].y;
-        float yTwo = boundingBox[3].y;
+        float yOne = boundingBox[0].z;
+        float yTwo = boundingBox[3].z;
 
         float sideOne = (float) Math.sqrt(Math.pow(xTwo-xOne,2) + Math.pow(yTwo-yOne,2));
 
         float xThree = boundingBox[1].x;
-        float yThree = boundingBox[1].y;
+        float yThree = boundingBox[1].z;
 
         float sideTwo = (float) Math.sqrt(Math.pow(xThree-xOne,2) + Math.pow(yThree-yOne,2));
 

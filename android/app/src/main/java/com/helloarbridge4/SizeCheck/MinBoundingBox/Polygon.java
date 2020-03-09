@@ -1,4 +1,4 @@
-package com.helloarbridge4.SizeCheck;
+package com.helloarbridge4.SizeCheck.MinBoundingBox;
 
 import com.helloarbridge4.Point3F.Point3F;
 

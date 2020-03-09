@@ -1,6 +1,5 @@
 import com.helloarbridge4.Point3F.Point3F;
-import com.helloarbridge4.SizeCheck.QuickHull;
-import com.helloarbridge4.SizeCheck.TwoDimensionalOrientedBoundingBox;
+import com.helloarbridge4.SizeCheck.MinBoundingBox.QuickHull;
 
 import org.junit.Assert;
 import org.junit.Test;

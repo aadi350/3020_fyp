@@ -1,8 +1,7 @@
 import com.helloarbridge4.Point3F.Point3F;
-import com.helloarbridge4.SizeCheck.QuickHull;
-import com.helloarbridge4.SizeCheck.TwoDimensionalOrientedBoundingBox;
+import com.helloarbridge4.SizeCheck.MinBoundingBox.QuickHull;
+import com.helloarbridge4.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundingBox;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -19,42 +18,16 @@ public class TwoDimensionalOrientedBoundingBoxTest {
     private final int LOOP_COUNT = 25;
     private final int POINT_COUNT = 75;
 
-
-
-    @Test
-    public void getMinimumBoundingRectangleKnown() {
-
-        Point3F[] expected = {
-                new Point3F(280f,0f,-40f),
-                new Point3F(200f,0f,200f),
-                new Point3F(-400f,0f,0f),
-                new Point3F(-320f , 0f,-240f)
-        };
-
-        ArrayList<Point3F> pointList = new ArrayList<>();
-        pointList.add(new Point3F(-300f,0f,-150f));
-        pointList.add(new Point3F(200f,0f,200f));
-        pointList.add(new Point3F(100f,0f,-100f));
-        pointList.add(new Point3F(-400f,0f,0f));
-
-        Point3F[] actual = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
-
-        int i = 0;
-        for (Point3F p:actual) {
-            Assert.assertEquals(expected[i].x,p.x,0.2);
-            Assert.assertEquals(expected[i].z,p.z,0.2);
-            i++;
-        }
-
-        System.out.println(pointList);
-    }
-
     @Test
     public void getMinimumBoundingRectangleTest() {
-        ArrayList<Point3F> pointList = new ArrayList<>(generatePoints());
-//        ArrayList<Point3F> pointList = new ArrayList<>();
+//        ArrayList<Point3F> pointList = new ArrayList<>(generatePoints());
+        ArrayList<Point3F> pointList = new ArrayList<>();
+        pointList.add(new Point3F(-1f,0f,0f));
+        pointList.add(new Point3F(0f,0f,1f));
+        pointList.add(new Point3F(1f,0f,0f));
+        pointList.add(new Point3F(0f,0f,-1f));
         for (int i = 1; i  <= RECUR_COUNT;  i++) {
-            pointList.addAll(generatePoints());
+            //pointList.addAll(generatePoints());
             try {
                 ArrayList<Point3F> hull = QuickHull.getConvexHull(pointList);
                 Point3F[] rectMin = TwoDimensionalOrientedBoundingBox.getOBB(hull);

@@ -272,6 +272,10 @@ public class ARActivity extends AppCompatActivity {
 
         FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,planePose);
         colourChangeHandler.setObject(fitCode);
+        updateDebugText(
+                String.valueOf(sizeHandler.getBoxLength()),
+                String.valueOf(sizeHandler.getBoxWidth()),
+                String.valueOf(sizeHandler.getHighZ()));
 
         for (int i = 0; i < points.limit(); i+=4) {
                 pointCloudArrayList.add(new Float[] {
