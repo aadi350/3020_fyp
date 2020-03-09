@@ -106,8 +106,8 @@ public class QuickHull {
 
     public static float distance(Point3F A, Point3F B, Point3F C) {
         final float ABx = B.x - A.x;
-        final float ABy = B.y - A.y;
-        float num = ABx * (A.y - C.y) - ABy * (A.x - C.x);
+        final float ABz = B.z - A.z;
+        float num = ABx * (A.z - C.z) - ABz * (A.x - C.x);
         if (num < 0) {
             num = -num;
         }
@@ -115,7 +115,7 @@ public class QuickHull {
     }
 
     public static int pointLocation(Point3F A, Point3F B, Point3F P) {
-        float cp1 = (B.x - A.x) * (P.y - A.y) - (B.y - A.y) * (P.x - A.x);
+        float cp1 = (B.x - A.x) * (P.z - A.z) - (B.z - A.z) * (P.x - A.x);
         if (cp1 > 0)
             return 1;
         else if (cp1 == 0)

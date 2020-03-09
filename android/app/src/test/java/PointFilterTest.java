@@ -1,6 +1,4 @@
-import android.graphics.PointF;
-import android.util.Log;
-
+import com.google.ar.core.Pose;
 import com.google.ar.sceneform.math.Vector3;
 import com.helloarbridge4.Point3F.Point3F;
 import com.helloarbridge4.Point3F.PointFilter;
@@ -17,7 +15,7 @@ public class PointFilterTest {
 
     final int LOOP_COUNT = 1000000;
     final float Z_THRESH = 0.1f;
-    final Vector3 REGION_LIMITS = new Vector3(0.8f,0.8f,0.8f);
+    final Vector3 REGION_LIMITS = new Vector3(0.5f,0.5f,0.5f);
     final float POINT_CONF_LIM = 0.7f;
 
     @Test
@@ -60,10 +58,12 @@ public class PointFilterTest {
         System.out.println(closeList.size());
         for (Point3F point : closeList) {
             System.out.println(point.toString());
+
+            float difX = Math.abs(point.x - refPoint.x);
+            float difZ = Math.abs(point.z - refPoint.z);
+            float dist = (float) Math.sqrt(difX*difX + difZ*difZ);
             Assert.assertTrue(
-                    Math.abs(point.x - refPoint.x) <= REGION_LIMITS.x &&
-                            Math.abs(point.y - refPoint.y) <= REGION_LIMITS.y &&
-                            Math.abs(point.z - refPoint.z) <= REGION_LIMITS.z
+                dist < 0.5f
             );
 
         }
@@ -77,6 +77,8 @@ public class PointFilterTest {
     public void filterByGround() {
         Vector3 ground = new Vector3(Vector3.zero());
         ArrayList<Point3F> pointList = new ArrayList<>();
+        float[] array = new float[]{0f, 0f, 0f};
+        Pose planePose = new Pose(new float[]{0f, 0f, 0f},new float[]{0f, 0f, 0f, 0f});
         Random rd = new Random();
         for (int i = 0; i < LOOP_COUNT; i++) {
             pointList.add(
@@ -88,19 +90,19 @@ public class PointFilterTest {
             );
         }
 
-        ArrayList<Point3F> filteredList = PointFilter.filterGround(pointList, ground);
+        ArrayList<Point3F> filteredList = PointFilter.filterGround(pointList, planePose);
 
         for (Point3F point : filteredList) {
             Assert.assertTrue(
-                    point.z > Z_THRESH
+                    point.y > Z_THRESH
             );
         }
 
         filteredList.clear();
-        Assert.assertNotNull(PointFilter.filterGround(filteredList, ground));
+        Assert.assertNotNull(PointFilter.filterGround(filteredList, planePose));
 
         filteredList = null;
-        Assert.assertNotNull(PointFilter.filterGround(filteredList, ground));
+        Assert.assertNotNull(PointFilter.filterGround(filteredList, planePose));
     }
 
     float generateRandomInRange(Float max, Float min) {

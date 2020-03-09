@@ -96,7 +96,7 @@ public class PointFilter {
 
         float dist = (float) Math.sqrt(difX*difX + difZ*difZ);
 
-        return (dist > REGION_LIMITS);
+        return (dist < REGION_LIMITS);
     }
 
     public static ArrayList<Point3F> filterGround(ArrayList<Point3F> pointList, Pose planePose) {
