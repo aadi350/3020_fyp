@@ -17,39 +17,39 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
 public class SizeCheckHandler {
+    private static final int TRIM_THRESH_SIZE = 100, TRIM_REDUCE_SIZE = 50;
     private final int POINT_LOWER_THRESH = 25;
     private final String TAG = "SizeCheckHandler";
     private Vector3 objectSize = new Vector3();
     private Point3F[] boundingBox;
     private Vector3 storedObjectPosition = new Vector3(Vector3.zero());
     private ArrayList<Point3F> pointList = new ArrayList<>();
+    QuickSort q = new QuickSort();
     private float highZ;
+    Vector3 actualSize = new Vector3(Vector3.zero());
+    private FitCodes NULL = FitCodes.NONE;
+
+    private int currentPointSize = 0, prevPointSize = 0;
 
 
     public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Pose planePose) {
-        if (pointBuffer == null || nodePosition == null || planePose == null)  return FitCodes.NONE;
+        if (pointBuffer == null || nodePosition == null || planePose == null)  return NULL;
         Log.d(TAG, "checkIfFits()");
-        QuickSort q = new QuickSort();
-        Vector3 actualSize = new Vector3(Vector3.zero());
 
-        //Resets object measurement to accomodate new object position
-//        boolean newPosition = emptyPointListOnMove(nodePosition);
-//        if (newPosition) return FitCodes.NONE;
+        if (!pointBuffer.hasRemaining()) return NULL;
+        if (pointBuffer.remaining() < POINT_LOWER_THRESH) return NULL;
 
-        //Ensures there are points to check and filters Points in PointCloud by distance to
-        //placed object and object confidence score
-
-        if (!pointBuffer.hasRemaining()) return FitCodes.NONE;
         getValidPoints(pointBuffer, nodePosition, planePose);
 
-        if (pointList.size() < POINT_LOWER_THRESH) return null;
+        pointList.trimToSize();
+        pointList = trimList(pointList);
+        if (pointList.size() < POINT_LOWER_THRESH) return NULL;
 
-        try {
+        if (enoughPoints(pointList)) try {
             boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
-            //TODO refactor highZ to highY
             highZ = q.getHighestZ(this.pointList) - planePose.ty();
 
-            actualSize = new Vector3(getBoxLength(boundingBox), getBoxWidth(boundingBox), highZ);
+            actualSize .set(getBoxLength(boundingBox), getBoxWidth(boundingBox), highZ);
 
             switch (objectCode) {
                 case CARRYON:
@@ -59,8 +59,7 @@ public class SizeCheckHandler {
                 case PERSONAL:
                     objectSize = PersonalItemBuilder.getObjectSize();
             }
-
-        } catch (Exception i ) {
+        } catch (Exception i) {
             Log.w(TAG, i.getLocalizedMessage());
         }
 
@@ -71,6 +70,23 @@ public class SizeCheckHandler {
         return (fits) ? FitCodes.FIT : FitCodes.LARGE;
     }
 
+    private ArrayList<Point3F> trimList(ArrayList<Point3F> pointList) {
+        if (pointList.size() > TRIM_THRESH_SIZE) {
+            int lim = pointList.size();
+            ArrayList<Point3F> temp = new ArrayList<>();
+            for (int i = lim - 25; i < lim; i++) {
+                temp.add(pointList.get(i));
+            }
+        }
+        return pointList;
+    }
+
+    private boolean enoughPoints(ArrayList<Point3F> pointList) {
+        final int POINT_INCREASE_THRESH = 15;
+        prevPointSize = currentPointSize;
+        currentPointSize = pointList.size();
+        return (currentPointSize > prevPointSize + POINT_INCREASE_THRESH);
+    }
 
     private void getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition, Pose planePose) {
 

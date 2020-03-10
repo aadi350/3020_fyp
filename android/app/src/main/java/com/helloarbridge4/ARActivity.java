@@ -42,6 +42,7 @@ import com.helloarbridge4.SizeCheck.SizeCheckHandler;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 
 public class ARActivity extends AppCompatActivity {
@@ -56,6 +57,7 @@ public class ARActivity extends AppCompatActivity {
     private static final int DUFFEL_ID = R.id.radio_duffel;
 
     private ArFragment arFragment;
+    private Timer timer;
     private ImageButton removeObjects;
     private TextView onScreenText;
     private ArSceneView arSceneView;
@@ -261,14 +263,10 @@ public class ARActivity extends AppCompatActivity {
         setOnScreenText(arFragment);
         Frame frame = arFragment.getArSceneView().getArFrame();
         PointCloud pointCloud = frame.acquirePointCloud();
-        ArrayList<Float[]> pointCloudArrayList = new ArrayList<>();
 
-        //TODO remove (maybe)
         pcVis.update(pointCloud);
 
         FloatBuffer points = pointCloud.getPoints();
-
-        Log.i("POINT:","" + points.remaining());
 
         FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,planePose);
         colourChangeHandler.setObject(fitCode);
@@ -277,22 +275,7 @@ public class ARActivity extends AppCompatActivity {
                 String.valueOf(sizeHandler.getBoxWidth()),
                 String.valueOf(sizeHandler.getHighZ()));
 
-        for (int i = 0; i < points.limit(); i+=4) {
-                pointCloudArrayList.add(new Float[] {
-                    points.get(i),      //x
-                    points.get(i+2),    //z
-                    points.get(i+1)     //y
-                }
-            );
-
-                Vector3 a = anchorNode.getWorldPosition();
-                Log.d("ANCHOR", anchorNode.getWorldRotation().toString());
-                String aPos = a.x + " " + a.y + " " + a.z;
-                if (points.get(i+3) > 0.8) {
-                    Log.d("PT:",points.get(i) + " " + points.get(i + 1) + " " + points.get(i + 2) + " " + aPos);
-                }
-                pointCloud.release();
-        }
+        pointCloud.release();
 
 
 
