@@ -5,9 +5,6 @@ import com.helloarbridge4.Point3F.Point3F;
 import java.util.ArrayList;
 
 public final class TwoDimensionalOrientedBoundingBox {
-
-    protected enum Corner { UPPER_RIGHT, UPPER_LEFT, LOWER_LEFT, LOWER_RIGHT }
-
     public static Point3F[] getOBB(ArrayList<Point3F> pointList) {
         Polygon polygon =  new Polygon(pointList);
         return getMinimumBoundingRectangle(polygon);
@@ -53,10 +50,10 @@ public final class TwoDimensionalOrientedBoundingBox {
 
     public static Rectangle boundingBox(Polygon polygon)
     {
-        float minX = Float.MAX_VALUE;
-        float minZ = Float.MAX_VALUE;
-        float maxX = Float.MIN_VALUE;
-        float maxZ = Float.MIN_VALUE;
+        float minX = Float.POSITIVE_INFINITY;
+        float minZ = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY;
+        float maxZ = Float.NEGATIVE_INFINITY;
 
         for(int i=0;i<polygon.pointCount();i++)
         {
@@ -81,8 +78,8 @@ public final class TwoDimensionalOrientedBoundingBox {
         double deltaXBC = rectangle[1].x - rectangle[2].x;
         double deltaZBC = rectangle[1].z - rectangle[2].z;
 
-        double lengthAB = Math.sqrt((deltaXAB * deltaXAB) + (deltaZAB * deltaZAB));
-        double lengthBC = Math.sqrt((deltaXBC * deltaXBC) + (deltaZBC * deltaZBC));
+        double lengthAB = Math.sqrt(Math.abs((deltaXAB * deltaXAB) + (deltaZAB * deltaZAB)));
+        double lengthBC = Math.sqrt(Math.abs((deltaXBC * deltaXBC) + (deltaZBC * deltaZBC)));
 
         return lengthAB * lengthBC;
     }

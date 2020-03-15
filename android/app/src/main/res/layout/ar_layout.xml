@@ -40,8 +40,16 @@
             android:background="@drawable/roundcorner"
             android:padding="12dip"
             app:srcCompat="@drawable/baseline_delete_white_36" />
+
+
     </fragment>
 
+    <TextView
+        android:id="@+id/t"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|center_vertical"
+        android:text="TextView" />
 
 
     <RadioGroup
@@ -115,6 +123,8 @@
             android:text="TextView"
             android:textColor="#FFEBEE" />
     </LinearLayout>
+
+
 
 
 </FrameLayout>

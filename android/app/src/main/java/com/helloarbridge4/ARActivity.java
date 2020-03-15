@@ -1,5 +1,7 @@
 package com.helloarbridge4;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -8,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -111,7 +114,7 @@ public class ARActivity extends AppCompatActivity {
         //end remove
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        //findViewById(R.id.removeObjects).setOnClickListener(this::measure);
+        removeObjects = findViewById(R.id.removeObjects);
         colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
 
 
@@ -138,7 +141,7 @@ public class ARActivity extends AppCompatActivity {
             });
 
 
-
+        TextView t = findViewById(R.id.t);
 
         //buttons
         radioGroup.setOnCheckedChangeListener(
@@ -148,20 +151,20 @@ public class ARActivity extends AppCompatActivity {
             );
 
 //
-//        removeObjects.setOnClickListener(
-//                w -> {
-//                    if (objectPlaced) {
-//                        objectPlaced = false;
-//                        framesStart = 0;
-//                        try {
-//                            removeAnchorNode(anchorNode);
-//                        } catch (NullPointerException e) {
-//                            Log.w(TAG, e.getLocalizedMessage());
-//                        }
-//                        radioGroup.clearCheck();
-//                    }
-//                }
-//        );
+        removeObjects.setOnClickListener(
+                w -> {
+                    if (objectPlaced) {
+                        objectPlaced = false;
+                        framesStart = 0;
+                        try {
+                            removeAnchorNode(anchorNode);
+                        } catch (NullPointerException e) {
+                            Log.w(TAG, e.getLocalizedMessage());
+                        }
+                        radioGroup.clearCheck();
+                    }
+                }
+        );
     }
 
     private boolean scan = false;
@@ -269,11 +272,14 @@ public class ARActivity extends AppCompatActivity {
         FloatBuffer points = pointCloud.getPoints();
 
         FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,planePose);
-        colourChangeHandler.setObject(fitCode);
-        updateDebugText(
-                String.valueOf(sizeHandler.getBoxLength()),
-                String.valueOf(sizeHandler.getBoxWidth()),
-                String.valueOf(sizeHandler.getHighZ()));
+        if (fitCode != null) {
+            colourChangeHandler.setObject(fitCode);
+            updateDebugText(
+                    String.valueOf(sizeHandler.getBoxLength()),
+                    String.valueOf(sizeHandler.getBoxWidth()),
+                    String.valueOf(sizeHandler.getHighZ()));
+        }
+
 
         pointCloud.release();
 

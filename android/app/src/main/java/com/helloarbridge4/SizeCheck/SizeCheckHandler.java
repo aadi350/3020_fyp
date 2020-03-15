@@ -17,47 +17,59 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
 public class SizeCheckHandler {
-    private static final int TRIM_THRESH_SIZE = 100, TRIM_REDUCE_SIZE = 50;
-    private final int POINT_LOWER_THRESH = 25;
+    private static final int TRIM_THRESH_SIZE = 450, TRIM_REDUCE_SIZE = 50;
     private final String TAG = "SizeCheckHandler";
     private Vector3 objectSize = new Vector3();
     private Point3F[] boundingBox;
     private Vector3 storedObjectPosition = new Vector3(Vector3.zero());
     private ArrayList<Point3F> pointList = new ArrayList<>();
-    QuickSort q = new QuickSort();
+    private QuickSort q = new QuickSort();
     private float highZ;
-    Vector3 actualSize = new Vector3(Vector3.zero());
+    private Vector3 actualSize = new Vector3(Vector3.zero());
     private FitCodes NULL = FitCodes.NONE;
 
     private int currentPointSize = 0, prevPointSize = 0;
-
+    private int frameCount = 0;
+    private final int FRAME_THRESH  = 60;
 
     public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Pose planePose) {
         if (pointBuffer == null || nodePosition == null || planePose == null)  return NULL;
-        Log.d(TAG, "checkIfFits()");
+        Log.d(TAG, "checkIfFits() start");
 
         if (!pointBuffer.hasRemaining()) return NULL;
+        int POINT_LOWER_THRESH = 25;
         if (pointBuffer.remaining() < POINT_LOWER_THRESH) return NULL;
 
         getValidPoints(pointBuffer, nodePosition, planePose);
+        frameCount++;
+        //pointList = trimList(pointList);
 
-        pointList.trimToSize();
-        pointList = trimList(pointList);
-        if (pointList.size() < POINT_LOWER_THRESH) return NULL;
+        if (pointList.size() < POINT_LOWER_THRESH) {
+            return NULL;
+        }
 
-        if (enoughPoints(pointList)) try {
-            boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
+        if (frameCount % FRAME_THRESH != 0) return null;
+
+        try {
+            ArrayList<Point3F> points = this.pointList;
+            boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(points);
+
             highZ = q.getHighestZ(this.pointList) - planePose.ty();
 
-            actualSize .set(getBoxLength(boundingBox), getBoxWidth(boundingBox), highZ);
+            float actualLength = getBoxLength();
+            float actualWidth = getBoxWidth();
 
-            switch (objectCode) {
-                case CARRYON:
-                    objectSize = CarryOnBuilder.getObjectSize();
-                case DUFFEL:
-                    objectSize = DuffelBuilder.getObjectSize();
-                case PERSONAL:
-                    objectSize = PersonalItemBuilder.getObjectSize();
+            if (actualLength != 0f && actualWidth != 0f) {
+                actualSize.set(actualLength, actualWidth, highZ);
+                Log.d(TAG,"CALC");
+                switch (objectCode) {
+                    case CARRYON:
+                        objectSize = CarryOnBuilder.getObjectSize();
+                    case DUFFEL:
+                        objectSize = DuffelBuilder.getObjectSize();
+                    case PERSONAL:
+                        objectSize = PersonalItemBuilder.getObjectSize();
+                }
             }
         } catch (Exception i) {
             Log.w(TAG, i.getLocalizedMessage());
@@ -70,37 +82,29 @@ public class SizeCheckHandler {
         return (fits) ? FitCodes.FIT : FitCodes.LARGE;
     }
 
-    private ArrayList<Point3F> trimList(ArrayList<Point3F> pointList) {
-        if (pointList.size() > TRIM_THRESH_SIZE) {
-            int lim = pointList.size();
-            ArrayList<Point3F> temp = new ArrayList<>();
-            for (int i = lim - 25; i < lim; i++) {
-                temp.add(pointList.get(i));
-            }
-        }
-        return pointList;
-    }
-
     private boolean enoughPoints(ArrayList<Point3F> pointList) {
-        final int POINT_INCREASE_THRESH = 15;
-        prevPointSize = currentPointSize;
-        currentPointSize = pointList.size();
-        return (currentPointSize > prevPointSize + POINT_INCREASE_THRESH);
+            final int POINT_INCREASE_THRESH = 4;
+            currentPointSize = pointList.size();
+            if ((currentPointSize - prevPointSize) > POINT_INCREASE_THRESH) {
+                prevPointSize = currentPointSize;
+                return true;
+            }
+            return false;
     }
 
-    private void getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition, Pose planePose) {
+    private ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition, Pose planePose) {
 
         if (pointBuffer == null) {
             Log.w(TAG, "PointBuffer NULL");
-            return;
+            return this.pointList;
         }
         if (nodePosition == null)  {
             Log.w(TAG, "NodePosition null");
-            return;
+            return null;
         }
         Log.d(TAG,"Buffer: " + pointBuffer.remaining());
         pointList.addAll(PointFilter.getValidPoints(pointBuffer,nodePosition,planePose));
-        Log.d(TAG,"PointList Size: " + pointList.size());
+        return pointList;
     }
 
 
@@ -126,38 +130,28 @@ public class SizeCheckHandler {
         return this.highZ;
     }
 
-    public boolean emptyPointListOnMove(Vector3 currentPosition) {
-        float THRESH = 0.001f;
-        if (currentPosition == null) return false;
-        boolean xDif = Math.abs(currentPosition.x - storedObjectPosition.x) > THRESH;
-        boolean yDif =Math.abs(currentPosition.y - storedObjectPosition.y) > THRESH;
-        boolean zDif = Math.abs(currentPosition.z - storedObjectPosition.z) > THRESH;
-        if (xDif || yDif || zDif) {
-            pointList.clear();
-            storedObjectPosition.set(currentPosition);
-            Log.d(TAG,"pointList cleared");
-            Log.d(TAG,currentPosition.toString());
-            return true;
-        }
-        Log.d(TAG,"emptyListOnMove(): " + currentPosition.toString());
-        return false;
-    }
 
     public float[] getBoxDimLW(Point3F[] boundingBox) {
         float[] inputNullArray = {-1f,-1f};
         if (boundingBox == null || boundingBox.length != 4) return inputNullArray;
 
+
         float xOne = boundingBox[0].x;
         float xTwo = boundingBox[3].x;
-        float yOne = boundingBox[0].z;
-        float yTwo = boundingBox[3].z;
+        float zOne = boundingBox[0].z;
+        float zTwo = boundingBox[3].z;
 
-        float sideOne = (float) Math.sqrt(Math.pow(xTwo-xOne,2) + Math.pow(yTwo-yOne,2));
+        float sideOne = (float) Math.sqrt((xTwo-xOne)*(xTwo-xOne) + (zTwo-zOne)*(zTwo-zOne));
 
         float xThree = boundingBox[1].x;
-        float yThree = boundingBox[1].z;
+        float zThree = boundingBox[1].z;
 
-        float sideTwo = (float) Math.sqrt(Math.pow(xThree-xOne,2) + Math.pow(yThree-yOne,2));
+        float sideTwo = (float) Math.sqrt((xThree-xOne)*(xThree-xOne) + (zThree-zOne)*(zThree-zOne));
+
+        if (sideOne == Float.NaN || sideTwo == Float.NaN) {
+            this.pointList.clear();
+            return new float[] {-1f,-1f};
+        }
 
         if (sideOne > sideTwo) {
             float[] boxDim = {sideOne,sideTwo};
@@ -171,10 +165,11 @@ public class SizeCheckHandler {
 
 
     private boolean compareLimits(Vector3 ref, Vector3 actual) {
+        final float DIM_BUFFER = 0.05f;
         return (
-                        (ref.x >= actual.x) &&
-                        (ref.y >= actual.y) &&
-                        (ref.z >= actual.z)
+//                        (ref.x + DIM_BUFFER >= actual.x) &&
+                        (ref.y + DIM_BUFFER >= actual.y) //&&
+//                        (ref.z + DIM_BUFFER >= actual.z)
                 );
     }
 

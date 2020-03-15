@@ -18,8 +18,10 @@ public class QuickHull {
 
 
         int minPoint = -1, maxPoint = -1;
-        float minX = Float.MAX_VALUE;
-        float maxX = Float.MIN_VALUE;
+        float minX = 10f;
+        float maxX = -10f;
+
+
 
         for (int i = 0; i < points.size(); i++) {
             if (points.get(i).x < minX) {
@@ -31,6 +33,10 @@ public class QuickHull {
                 maxPoint = i;
             }
         }
+
+        if (minPoint == -1) throw new NullPointerException();
+        if (maxPoint == -1) throw new NullPointerException();
+
         final Point3F A = points.get(minPoint);
         final Point3F B = points.get(maxPoint);
         convexHull.add(A);

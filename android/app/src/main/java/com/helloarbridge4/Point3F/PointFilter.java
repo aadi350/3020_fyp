@@ -11,23 +11,22 @@ import java.util.List;
 
 
 public class PointFilter {
-    private static final float POINT_CONFIDENCE_MIN = 0.8f;
+    private static final float POINT_CONFIDENCE_MIN = 0.75f;
 
-    private static final float GROUND_THRESH_LIMIT = 0.2f;
+    private static final float GROUND_THRESH_LIMIT = 0.05f;
     private static final float REGION_LIMITS = 0.5f;
     private static final float CAMERA_DISTANCE_LIMIT = 0.5f;
 
     public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 node, Pose planePose) {
     //parent method to filter FloatBuffer of raw point data
-        List<Point3F> confPoints = filterByConfidence(pointBuffer);
+        ArrayList<Point3F> confPoints = filterByConfidence(pointBuffer);
         ArrayList<Point3F> closePoints = filterByRegion(confPoints, node);
-        //TODO add filterByDistanceToCamera
         ArrayList<Point3F> filteredPoints = filterGround(closePoints,planePose);
         return filteredPoints;
     }
 
-    public static List<Point3F> filterByConfidence(ArrayList<Float[]> pointArrayList) {
-        List<Point3F> pointList = new ArrayList<>();
+    public static ArrayList<Point3F> filterByConfidence(ArrayList<Float[]> pointArrayList) {
+        ArrayList<Point3F> pointList = new ArrayList<>();
         if (pointArrayList == null) return pointList;
 
         for (Float[] f : pointArrayList) {
@@ -44,8 +43,8 @@ public class PointFilter {
         return pointList;
     }
 
-    public static List<Point3F> filterByConfidence(FloatBuffer pointBuffer) {
-        List<Point3F> pointList = new ArrayList<>();
+    public static ArrayList<Point3F> filterByConfidence(FloatBuffer pointBuffer) {
+        ArrayList<Point3F> pointList = new ArrayList<>();
 
         if (pointBuffer == null) return new ArrayList<Point3F>();
 
