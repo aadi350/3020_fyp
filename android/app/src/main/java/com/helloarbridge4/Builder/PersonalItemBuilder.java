@@ -7,8 +7,8 @@ import com.google.ar.sceneform.math.Vector3;
 public class PersonalItemBuilder extends objectBuilder {
     public void initBuilder(Context context) {
         final float LENGTH = 0.33f;
-        final float WIDTH = 0.43f;
-        final float HEIGHT = 0.15f;
+        final float WIDTH = 0.15f;
+        final float HEIGHT = 0.43f;
 
         SFBRed = "personalItem_red.sfb";
         SFBGreen = "personalItem_green.sfb";
