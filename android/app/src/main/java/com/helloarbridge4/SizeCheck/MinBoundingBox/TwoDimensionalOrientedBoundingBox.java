@@ -6,7 +6,8 @@ import java.util.ArrayList;
 
 public final class TwoDimensionalOrientedBoundingBox {
     public static Point3F[] getOBB(ArrayList<Point3F> pointList) {
-        Polygon polygon =  new Polygon(pointList);
+        ArrayList<Point3F> tempList = new ArrayList<>(pointList);
+        Polygon polygon =  new Polygon(tempList);
         return getMinimumBoundingRectangle(polygon);
     }
 

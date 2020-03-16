@@ -10,15 +10,16 @@ import java.util.Collections;
 public class QuickSort {
     private static final String TAG = "QuickSort";
 
-    public float getHighestZ(ArrayList<Point3F> pointList) {
+    public float getHighestPoint(ArrayList<Point3F> pointList) {
         ArrayList<Point3F> sortedList = sortByHeight(pointList);
-        float highZ = 0.0f;
+        float highPointVal = 0.0f;
         try {
-            highZ = sortedList.get(sortedList.size() - 1).y;
+            highPointVal = sortedList.get(sortedList.size() - 1).y;
         } catch (ArrayIndexOutOfBoundsException e) {
             Log.e(TAG, e.getLocalizedMessage());
         }
-        return highZ;
+
+        return Math.abs(highPointVal);
     }
 
     public ArrayList<Point3F> sortByHeight(ArrayList<Point3F> pointList) {

@@ -34,8 +34,8 @@ public class QuickHull {
             }
         }
 
-        if (minPoint == -1) throw new NullPointerException();
-        if (maxPoint == -1) throw new NullPointerException();
+//        if (minPoint == -1) throw new NullPointerException();
+//        if (maxPoint == -1) throw new NullPointerException();
 
         final Point3F A = points.get(minPoint);
         final Point3F B = points.get(maxPoint);
