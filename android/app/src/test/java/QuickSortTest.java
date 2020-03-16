@@ -68,6 +68,6 @@ public class QuickSortTest {
 
         QuickSort q = new QuickSort();
 
-        Assert.assertEquals(highZ, q.getHighestZ(pointList), 0.05f);
+        Assert.assertEquals(highZ, q.getHighestPoint(pointList), 0.05f);
     }
 }

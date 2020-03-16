@@ -4,18 +4,16 @@ import com.helloarbridge4.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundin
 
 import org.junit.Test;
 
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
 
 public class TwoDimensionalOrientedBoundingBoxTest {
-    private static final int RECUR_COUNT = 10;
+    private static final int RECUR_COUNT = 5;
     private final int LOOP_COUNT = 25;
     private int POINT_COUNT;
 
@@ -23,24 +21,26 @@ public class TwoDimensionalOrientedBoundingBoxTest {
     @Test
     public void getMinimumBoundingRectangleTest() {
         ArrayList<Point3F> pointList = new ArrayList<>(generatePoints());
-        POINT_COUNT = 1;
+        POINT_COUNT = 5;
+        pointList.addAll(generatePoints());
+
         for (int i = 1; i  <= RECUR_COUNT;  i++) {
 
-            pointList.addAll(generatePoints());
+
             try {
                 System.out.println(i);
-                ArrayList<Point3F> hull = QuickHull.getConvexHull(pointList);
-                Point3F[] rectMin = TwoDimensionalOrientedBoundingBox.getOBB(hull);
-
+                final String filePathPoints = "C:\\Users\\aaadi\\Google Drive\\Documents\\School Work\\Year 4\\ECNG 3020\\points" +  i +".txt";
+                writeFile(pointList,filePathPoints);
+                //ArrayList<Point3F> hull = QuickHull.getConvexHull(pointList);
+                Point3F[] rectMin = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
+                for (Point3F p : pointList) {
+                    System.out.println(p.toString());
+                }
                 ArrayList<Point3F> OBBList = new ArrayList<>();
                 Collections.addAll(OBBList,rectMin);
 
-                final String filePathPoints = "C:\\Users\\aaadi\\Google Drive\\Documents\\School Work\\Year 4\\ECNG 3020\\points" +  i +".txt";
                 final String filePathOBB = "C:\\Users\\aaadi\\Google Drive\\Documents\\School Work\\Year 4\\ECNG 3020\\OBB" + i + ".txt";
-                writeFile(pointList,filePathPoints);
                 writeFile(OBBList,filePathOBB);
-
-                double minAreaActual = TwoDimensionalOrientedBoundingBox.getArea(rectMin);
 
                 //Assert.assertEquals(minArea, minAreaActual,0.15);
 
@@ -49,7 +49,6 @@ public class TwoDimensionalOrientedBoundingBoxTest {
             } catch (IndexOutOfBoundsException e) {
                 System.out.println(e.getLocalizedMessage());
             }
-            POINT_COUNT = 100*i;
         }
 
     }
@@ -57,7 +56,7 @@ public class TwoDimensionalOrientedBoundingBoxTest {
 
     public ArrayList<Point3F> generatePoints() {
         ArrayList<Point3F> pointList = new ArrayList<>();
-        for (int i = 0; i < POINT_COUNT; i++) {
+        for (int i = 0; i <= POINT_COUNT; i++) {
             pointList.add(new Point3F(
                     getRandom(),
                     getRandom(),

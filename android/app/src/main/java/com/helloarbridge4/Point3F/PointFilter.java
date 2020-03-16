@@ -11,7 +11,7 @@ import java.util.List;
 
 
 public class PointFilter {
-    private static final float POINT_CONFIDENCE_MIN = 0.75f;
+    private static final float POINT_CONFIDENCE_MIN = 0.7f;
 
     private static final float GROUND_THRESH_LIMIT = 0.05f;
     private static final float REGION_LIMITS = 0.5f;
@@ -78,7 +78,7 @@ public class PointFilter {
         return filteredList;
     }
 
-    public static ArrayList<Point3F> filterByRegion (@NonNull List<Point3F> pointList,Vector3 referencePoint) {
+    public static ArrayList<Point3F> filterByRegion (@NonNull ArrayList<Point3F> pointList,Vector3 referencePoint) {
         ArrayList<Point3F> points = new ArrayList<>();
         for (Point3F point : pointList) {
             if (filterPointByRegion(point, referencePoint)) {
