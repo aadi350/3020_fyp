@@ -1,7 +1,5 @@
 package com.helloarbridge4;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -10,7 +8,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -52,15 +49,12 @@ public class ARActivity extends AppCompatActivity {
     private static final String SCN_TAG = "OnSceneUpdate";
     private static final String TAG = "ARActivity";
     private static final double MIN_OPENGL_VERSION = 3.0;
-    private static final int FRAME_COUNT_THRESH = 60;
-    private static final float LIGHT_THRESH = 0.3f;
 
     private static final int PERSONAL_ID = R.id.radio_personal;
     private static final int CARRYON_ID = R.id.radio_carryon;
     private static final int DUFFEL_ID = R.id.radio_duffel;
 
     private ArFragment arFragment;
-    private Timer timer;
     private ImageButton removeObjects;
     private TextView onScreenText;
     private ArSceneView arSceneView;
@@ -70,9 +64,6 @@ public class ARActivity extends AppCompatActivity {
     private ColourChangeHandler colourChangeHandler;
     private TransformableNode node;
     private Pose planePose;
-
-    private int frames = 0;
-    private int framesStart = 0;
 
     private PointCloudRenderer pointCloudRenderer;
     private SizeCheckHandler sizeHandler;
@@ -85,7 +76,6 @@ public class ARActivity extends AppCompatActivity {
     private List<Float[]> positions3D;
     PointCloudVisualiser pcVis;
 
-    static TextView debugText_height, debugText_width, debugText_length;
 
     private Session session;
     private Config config;
@@ -105,16 +95,11 @@ public class ARActivity extends AppCompatActivity {
         //connecting views
         radioGroup = findViewById(R.id.change_type);
         onScreenText = findViewById(R.id.onScreenText);
-        //removeObjects = findViewById(R.id.removeObjects);
+        removeObjects = findViewById(R.id.removeObjects);
 
-        //TODO remove
-        debugText_height = findViewById(R.id.debugText_height);
-        debugText_width = findViewById(R.id.debugText_width);
-        debugText_length = findViewById(R.id.debugText_length);
-        //end remove
+
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        removeObjects = findViewById(R.id.removeObjects);
         colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
 
 
@@ -128,7 +113,6 @@ public class ARActivity extends AppCompatActivity {
                 measure();
                 disablePlaneDetection();
 
-
                 if (!objectPlaced) {
                     initAnchor(hitResult);
                     createNode(arFragment);
@@ -139,9 +123,6 @@ public class ARActivity extends AppCompatActivity {
                     objectPlaced = true;
                 }
             });
-
-
-        TextView t = findViewById(R.id.t);
 
         //buttons
         radioGroup.setOnCheckedChangeListener(
@@ -155,7 +136,6 @@ public class ARActivity extends AppCompatActivity {
                 w -> {
                     if (objectPlaced) {
                         objectPlaced = false;
-                        framesStart = 0;
                         try {
                             removeAnchorNode(anchorNode);
                         } catch (NullPointerException e) {
@@ -185,7 +165,6 @@ public class ARActivity extends AppCompatActivity {
 
         scan = true;
 
-        //TODO remove
         pcVis = new PointCloudVisualiser(getApplicationContext());
         arFragment.getArSceneView().getScene().addChild(pcVis);
         // If there is no frame then don't process anything.
@@ -274,24 +253,10 @@ public class ARActivity extends AppCompatActivity {
         FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,planePose);
         if (fitCode != null) {
             colourChangeHandler.setObject(fitCode);
-            updateDebugText(
-                    String.valueOf(sizeHandler.getBoxLength()),
-                    String.valueOf(sizeHandler.getBoxWidth()),
-                    String.valueOf(sizeHandler.getHighZ()));
+
         }
-
-
         pointCloud.release();
-
-
-
-
-
     }
-    private boolean nodeNotNull() {
-        return (node != null);
-    }
-
 
     private void setModel(int toggleId) {
         removeAllModels();
@@ -306,12 +271,10 @@ public class ARActivity extends AppCompatActivity {
                 colourChangeHandler.updateObject(currentModel);
                 colourChangeHandler.setObject(FitCodes.NONE);
                 break;
-            case CARRYON_ID:
+            default:
                 currentModel = ObjectCodes.CARRYON;
                 colourChangeHandler.updateObject(currentModel);
                 colourChangeHandler.setObject(FitCodes.NONE);
-                break;
-            default:
                 break;
         }
         Log.d("setModel", "exit");
@@ -403,18 +366,7 @@ public class ARActivity extends AppCompatActivity {
     }
 
 
-    //TODO remove
-    private void updateDebugText(String textOne, String textTwo, String textThree) {
-        String lengthText = "Length: " + textOne;
-        String widthText = "Width: " + textTwo;
-        String heightText = "HighZ: " + textThree;
-        debugText_length.setText(lengthText);
-        debugText_width.setText(widthText);
-        debugText_height.setText(heightText);
 
-    }
-
-    //TODO remove
     private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
         Frame frame = arFragment.getArSceneView().getArFrame();
 
@@ -429,7 +381,6 @@ public class ARActivity extends AppCompatActivity {
                 }
             }
         }
-
     }
 
 
