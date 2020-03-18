@@ -1,0 +1,87 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.ar.sceneform.plugin'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.2"
+    defaultConfig {
+        applicationId "cal.ar"
+        minSdkVersion 28
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    implementation 'com.google.ar:core:1.15.0'
+    // Provides ArFragment, and other UX resources.
+    implementation 'com.google.ar.sceneform.ux:sceneform-ux:1.15.0'
+    //implementation 'com.google.android.gms:play-services-auth:17.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'de.javagl:obj:0.2.1'
+    implementation 'org.jetbrains:annotations:15.0'
+}
+
+
+sceneform.asset('sampledata/models/duffel/duffel.obj',
+        'default',
+        'sampledata/models/duffel/duffel.sfa',
+        'src/main/assets/duffel')
+
+sceneform.asset('sampledata/models/duffel_green/duffel_green.obj',
+        'default',
+        'sampledata/models/duffel_green/duffel_green.sfa',
+        'src/main/assets/duffel_green')
+
+sceneform.asset('sampledata/models/duffel_red/duffel_red.obj',
+        'default',
+        'sampledata/models/duffel_red/duffel_red.sfa',
+        'src/main/assets/duffel_red')
+
+sceneform.asset('sampledata/models/personalItem/personalItem.obj',
+        'default',
+        'sampledata/models/personalItem/personalItem.sfa',
+        'src/main/assets/personalItem')
+
+sceneform.asset('sampledata/models/personalItem_green/personalItem_green.obj',
+        'default',
+        'sampledata/models/personalItem_green/personalItem_green.sfa',
+        'src/main/assets/personalItem_green')
+
+sceneform.asset('sampledata/models/personalItem_red/personalItem_red.obj',
+        'default',
+        'sampledata/models/personalItem_red/personalItem_red.sfa',
+        'src/main/assets/personalItem_red')
+
+sceneform.asset('sampledata/models/suitcase/suitcase.obj',
+        'default',
+        'sampledata/models/suitcase/suitcase.sfa',
+        'src/main/assets/suitcase')
+
+sceneform.asset('sampledata/models/suitcase_green/suitcase_green.obj',
+        'default',
+        'sampledata/models/suitcase_green/suitcase_green.sfa',
+        'src/main/assets/suitcase_green')
+
+sceneform.asset('sampledata/models/suitcase_red/suitcase_red.obj',
+        'default',
+        'sampledata/models/suitcase_red/suitcase_red.sfa',
+        'src/main/assets/suitcase_red')
