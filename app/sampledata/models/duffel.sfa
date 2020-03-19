@@ -1,0 +1,104 @@
+{
+  materials: [
+    {
+      name: 'body',
+      parameters: [
+        {
+          baseColor: null,
+        },
+        {
+          baseColorTint: [
+            0.49693300000000001,
+            0.022173999999999999,
+            0.49693300000000001,
+            1,
+          ],
+        },
+        {
+          metallic: 1,
+        },
+        {
+          roughness: 0,
+        },
+        {
+          opacity: 0.5,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+    {
+      name: 'newLogo_white',
+      parameters: [
+        {
+          baseColor: 'newLogo_white',
+        },
+         {
+                  baseColorTint: [
+                    0,
+                    0,
+                    0,
+                    1,
+                  ],
+                },
+                {
+                  metallic: 1,
+                },
+                {
+                  roughness: 1,
+                },
+                {
+                  opacity: 1,
+                },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+    {
+      name: 'ruler',
+      parameters: [
+        {
+          baseColor: null,
+        },
+        {
+          baseColorTint: [
+            1,
+            0.226966,
+            0,
+            1,
+          ],
+        },
+        {
+          metallic: 1,
+        },
+        {
+          roughness: 0.093865000000000004,
+        },
+        {
+          opacity: null,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+  ],
+  model: {
+    attributes: [
+      'Position',
+      'TexCoord',
+      'Orientation',
+    ],
+    collision: {},
+    file: 'sampledata/models/duffel/duffel.obj',
+    name: 'duffel',
+    recenter: 'root',
+  },
+  samplers: [
+    {
+      file: 'C:\\\\Users\\\\aaadi\\\\Google Drive\\\\Documents\\\\School Work\\\\Year 4\\\\ECNG 3020\\\\Blender\\\\newLogo_white.png',
+      name: 'newLogo_white',
+      params: {
+        usage_type: 'Data',
+      },
+      pipeline_name: 'C:\\\\Users\\\\aaadi\\\\Google Drive\\\\Documents\\\\School Work\\\\Year 4\\\\ECNG 3020\\\\Blender\\\\newLogo_white.png',
+    },
+  ],
+  version: '0.54:2',
+}
