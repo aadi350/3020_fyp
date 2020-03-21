@@ -1,11 +1,11 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 apply plugin: 'com.google.ar.sceneform.plugin'
 
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     defaultConfig {
-        applicationId "cal.ar"
+        //applicationId "cal.ar"
         minSdkVersion 28
         targetSdkVersion 29
         versionCode 1

@@ -41,6 +41,7 @@ import cal.ar.SizeCheck.SizeCheckHandler;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 public class ARActivity extends AppCompatActivity {
@@ -135,7 +136,7 @@ public class ARActivity extends AppCompatActivity {
                         try {
                             removeAnchorNode(anchorNode);
                         } catch (NullPointerException e) {
-                            Log.w(TAG, e.getLocalizedMessage());
+                            Log.w(TAG, Objects.requireNonNull(e.getLocalizedMessage()));
                         }
                         radioGroup.clearCheck();
                     }
@@ -255,22 +256,19 @@ public class ARActivity extends AppCompatActivity {
 
     private void setModel(int toggleId) {
         removeAllModels();
-        switch (toggleId){
-            case PERSONAL_ID:
-                currentModel = ObjectCodes.PERSONAL;
-                colourChangeHandler.updateObject(currentModel);
-                colourChangeHandler.setObject(FitCodes.NONE);
-                break;
-            case DUFFEL_ID:
-                currentModel = ObjectCodes.DUFFEL;
-                colourChangeHandler.updateObject(currentModel);
-                colourChangeHandler.setObject(FitCodes.NONE);
-                break;
-            default:
-                currentModel = ObjectCodes.CARRYON;
-                colourChangeHandler.updateObject(currentModel);
-                colourChangeHandler.setObject(FitCodes.NONE);
-                break;
+
+        if (toggleId == PERSONAL_ID) {
+            currentModel = ObjectCodes.PERSONAL;
+            colourChangeHandler.updateObject(currentModel);
+            colourChangeHandler.setObject(FitCodes.NONE);
+        } else if (toggleId == DUFFEL_ID) {
+            currentModel = ObjectCodes.DUFFEL;
+            colourChangeHandler.updateObject(currentModel);
+            colourChangeHandler.setObject(FitCodes.NONE);
+        } else {
+            currentModel = ObjectCodes.CARRYON;
+            colourChangeHandler.updateObject(currentModel);
+            colourChangeHandler.setObject(FitCodes.NONE);
         }
         Log.d("setModel", "exit");
     }
