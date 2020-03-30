@@ -2,7 +2,7 @@
 buildscript {
     ext {
         buildToolsVersion = "28.0.3"
-        minSdkVersion = 16
+        minSdkVersion = 26
         compileSdkVersion = 28
         targetSdkVersion = 28
     }
@@ -14,18 +14,24 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.6.1'
         classpath 'com.google.ar.sceneform:plugin:1.15.0'
+
     }
 }
 apply plugin: 'com.android.library'
+apply plugin: 'com.google.ar.sceneform.plugin'
 
 android {
     compileSdkVersion 28
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 26
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     lintOptions {
         abortOnError false
@@ -57,7 +63,7 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.facebook.react:react-native:0.61.5'
+    implementation 'com.facebook.react:react-native:0.62.0'
     // Provides ARCore Session and related resources.
     implementation 'com.google.ar:core:1.16.0'
     // Provides ArFragment, and other UX resources.
@@ -67,4 +73,4 @@ dependencies {
     implementation 'de.javagl:obj:0.2.1' // Provides ARCore Session and related resources.
 }
 
-apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+//tform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)apply from: file("../node_modules/@react-native-community/cli-pla

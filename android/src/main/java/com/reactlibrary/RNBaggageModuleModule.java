@@ -5,15 +5,16 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
+import com.facebook.react.uimanager.IllegalViewOperationException;
+
+import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
 public class RNBaggageModuleModule extends ReactContextBaseJavaModule {
 
-  private final ReactApplicationContext reactContext;
-
   public RNBaggageModuleModule(ReactApplicationContext reactContext) {
     super(reactContext);
-    this.reactContext = reactContext;
   }
 
   @Override
@@ -22,12 +23,15 @@ public class RNBaggageModuleModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void launch() {
-      System.out.println("Native launched");
-      CharSequence text = "Hello toast!";
-      int duration = Toast.LENGTH_LONG;
-
-      Toast toast = Toast.makeText(reactContext, text, duration);
-      toast.show();
+  public void launch(Callback errorCallback, Callback successCallback) {
+      try {
+          ReactApplicationContext context = getReactApplicationContext();
+          Intent intent = new Intent(context, ARActivity.class);
+          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          context.startActivity(intent);
+          successCallback.invoke("Class: BridgeModule - launchNative");
+      } catch (IllegalViewOperationException e) {
+          errorCallback.invoke(e.getMessage());
+      }
     }
 }

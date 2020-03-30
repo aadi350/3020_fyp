@@ -1,0 +1,130 @@
+{
+  materials: [
+    {
+      name: 'Untitled-2-01',
+      parameters: [
+        {
+          baseColor: 'Untitled-2-01',
+        },
+        {
+          baseColorTint: [
+            0,
+            0,
+            0,
+            1,
+          ],
+        },
+        {
+          metallic: 0,
+        },
+        {
+          roughness: 1,
+        },
+        {
+          opacity: 1,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+    {
+      name: 'body',
+      parameters: [
+        {
+          baseColor: null,
+        },
+        {
+          baseColorTint: [
+            0.49693300000000001,
+            0.022173999999999999,
+            0.49693300000000001,
+            1,
+          ],
+        },
+        {
+          metallic: 0,
+        },
+        {
+          roughness: 1,
+        },
+        {
+          opacity: 0.5,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+    {
+      name: 'handle',
+      parameters: [
+        {
+          baseColor: null,
+        },
+        {
+          baseColorTint: [
+            1,
+            0.226966,
+            0,
+            1,
+          ],
+        },
+        {
+          metallic: 0,
+        },
+        {
+          roughness: 1,
+        },
+        {
+          opacity: null,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+    {
+      name: 'ruler',
+      parameters: [
+        {
+          baseColor: null,
+        },
+        {
+          baseColorTint: [
+            1,
+            0.226966,
+            0,
+            1,
+          ],
+        },
+        {
+          metallic: 0,
+        },
+        {
+          roughness: 1,
+        },
+        {
+          opacity: null,
+        },
+      ],
+      source: 'build/sceneform_sdk/default_materials/obj_material.sfm',
+    },
+  ],
+  model: {
+    attributes: [
+      'Position',
+      'TexCoord',
+      'Orientation',
+    ],
+    collision: {},
+    file: 'sampledata/models/suitcase/suitcase.obj',
+    name: 'suitcase',
+    recenter: 'root',
+  },
+  samplers: [
+    {
+      file: 'D:\\\\Users\\\\aaadi\\\\OneDrive\\\\Desktop\\\\Untitled-2-01.png',
+      name: 'Untitled-2-01',
+      params: {
+        usage_type: 'Data',
+      },
+      pipeline_name: 'D:\\\\Users\\\\aaadi\\\\OneDrive\\\\Desktop\\\\Untitled-2-01.png',
+    },
+  ],
+  version: '0.54:2',
+}
