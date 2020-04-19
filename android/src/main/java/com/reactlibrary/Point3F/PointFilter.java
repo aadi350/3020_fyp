@@ -1,5 +1,7 @@
 package com.reactlibrary.Point3F;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.google.ar.core.Pose;
@@ -17,39 +19,25 @@ public class PointFilter {
     private static final float REGION_LIMITS = 0.5f;
     private static final float CAMERA_DISTANCE_LIMIT = 0.5f;
 
-    public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 node, Pose planePose) {
+    private static final String TAG = "POINT_FILTER";
+
+    public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 node, Vector3 anchorNodePosition) {
     //parent method to filter FloatBuffer of raw point data
-        ArrayList<Point3F> confPoints = filterByConfidence(pointBuffer);
+
+        ArrayList<Point3F> pointList = convertBufferToList(pointBuffer);
+        ArrayList<Point3F> confPoints = filterByConfidence(pointList);
         ArrayList<Point3F> closePoints = filterByRegion(confPoints, node);
-        ArrayList<Point3F> filteredPoints = filterGround(closePoints,planePose);
+        ArrayList<Point3F> filteredPoints = filterGround(closePoints,anchorNodePosition);
+        Log.d(TAG, confPoints.size() + " " + closePoints.size() + " " + filteredPoints.size());
         return filteredPoints;
     }
 
-    public static ArrayList<Point3F> filterByConfidence(ArrayList<Float[]> pointArrayList) {
-        ArrayList<Point3F> pointList = new ArrayList<>();
-        if (pointArrayList == null) return pointList;
-
-        for (Float[] f : pointArrayList) {
-            if (f[3] > POINT_CONFIDENCE_MIN) {
-                    pointList.add(new Point3F(
-                            f[0],
-                            f[1],
-                            f[2],
-                            f[3]
-                        )
-                    );
-            }
-        }
-        return pointList;
-    }
-
-    public static ArrayList<Point3F> filterByConfidence(FloatBuffer pointBuffer) {
+    public static ArrayList<Point3F> convertBufferToList(FloatBuffer pointBuffer) {
         ArrayList<Point3F> pointList = new ArrayList<>();
 
         if (pointBuffer == null) return new ArrayList<Point3F>();
 
         for (int i = 0; i < pointBuffer.remaining(); i+=4) {
-            if (pointBuffer.get(i+3) > POINT_CONFIDENCE_MIN)
                 pointList.add(
                         new Point3F(
                                 pointBuffer.get(i),
@@ -60,6 +48,20 @@ public class PointFilter {
                 );
         }
         return pointList;
+    }
+
+    public static ArrayList<Point3F> filterByConfidence(ArrayList<Point3F> pointList) {
+        ArrayList<Point3F> filteredList = new ArrayList<>();
+
+        if (pointList == null) return new ArrayList<Point3F>();
+
+        for (Point3F p : pointList) {
+            if (p.c > POINT_CONFIDENCE_MIN) {
+                filteredList.add(p);
+            }
+        }
+
+        return filteredList;
     }
 
     public static ArrayList<Point3F> filterByDistanceToCamera(ArrayList<Point3F> pointList, Pose cameraPose) {
@@ -98,12 +100,12 @@ public class PointFilter {
         return (dist < REGION_LIMITS);
     }
 
-    public static ArrayList<Point3F> filterGround(ArrayList<Point3F> pointList, Pose planePose) {
+    public static ArrayList<Point3F> filterGround(ArrayList<Point3F> pointList, Vector3 anchorNodePosition) {
         ArrayList<Point3F> filteredList = new ArrayList<>();
         if (pointList == null) return filteredList;
 
         for (Point3F point : pointList) {
-            if (point.y > GROUND_THRESH_LIMIT + planePose.ty()) {
+            if (Math.abs(point.y - anchorNodePosition.y) >= GROUND_THRESH_LIMIT ) {
                 filteredList.add(point);
             }
         }

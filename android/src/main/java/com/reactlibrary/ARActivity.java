@@ -23,6 +23,7 @@ import com.google.ar.core.Plane;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
+import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.sceneform.AnchorNode;
@@ -144,6 +145,18 @@ public class ARActivity extends AppCompatActivity {
         );
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        try{
+            Runtime.getRuntime().gc();
+            finish();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+
     private boolean scan = false;
     public void measure() {
         if (scan) {
@@ -238,16 +251,23 @@ public class ARActivity extends AppCompatActivity {
         Log.d(TAG,"onSceneUpdate");
         if (!scan) return;
 
+
+
         //disablePlaneDetection();
         setOnScreenText(arFragment);
         Frame frame = arFragment.getArSceneView().getArFrame();
+        TrackingState trackingState = frame.getCamera().getTrackingState();
+        sizeHandler.flushListWhenNotTrackging(trackingState);
         PointCloud pointCloud = frame.acquirePointCloud();
+
+
+
 
         pcVis.update(pointCloud);
 
         FloatBuffer points = pointCloud.getPoints();
 
-        FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,planePose);
+        FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,node.getWorldPosition());
         if (fitCode != null && fitCode != FitCodes.NONE) {
             colourChangeHandler.setObject(fitCode);
         }
@@ -347,7 +367,7 @@ public class ARActivity extends AppCompatActivity {
     public void onPause() {
         super.onPause();
         if (arSceneView != null) {
-            arSceneView.pause();
+            arSceneView.destroy();
         }
     }
 

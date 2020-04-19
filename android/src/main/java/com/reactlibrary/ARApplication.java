@@ -14,4 +14,9 @@ public class ARApplication extends Application {
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(i);
     }
+
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+    }
 }

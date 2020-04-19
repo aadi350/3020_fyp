@@ -15,19 +15,18 @@
             android:id="@+id/onScreenText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center|top"
+            android:layout_marginStart="12dip"
+            android:layout_marginTop="60dip"
+            android:layout_marginEnd="12dip"
+            android:background="@drawable/roundcorner_white"
+            android:gravity="center"
+            android:paddingHorizontal="8dip"
+            android:paddingVertical="20dip"
             android:text="@string/promptText"
             android:textAlignment="center"
-            android:textSize="16sp"
-            android:layout_marginTop="60dip"
-            android:layout_marginStart = "12dip"
-            android:layout_marginEnd="12dip"
-            android:layout_gravity="center|top"
-            android:gravity="center"
             android:textColor="#B4B4B4"
-            android:paddingVertical="20dip"
-            android:paddingHorizontal="8dip"
-            android:background="@drawable/roundcorner_white"
-            />
+            android:textSize="16sp" />
 
         <ImageButton
             android:id="@+id/removeObjects"
