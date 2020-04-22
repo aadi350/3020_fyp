@@ -19,6 +19,10 @@ public class Rectangle extends Polygon {
         calcCenter();
     }
 
+    public double perimeter()  {
+        return 2*(width +  height);
+    }
+
     public double area()
     {
         return width * height;
