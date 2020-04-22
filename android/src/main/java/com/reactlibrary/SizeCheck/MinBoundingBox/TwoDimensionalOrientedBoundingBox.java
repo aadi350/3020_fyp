@@ -3,15 +3,19 @@ package com.reactlibrary.SizeCheck.MinBoundingBox;
 import com.reactlibrary.Point3F.Point3F;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public final class TwoDimensionalOrientedBoundingBox {
-    public static Point3F[] getOBB(ArrayList<Point3F> pointList) {
+    public static Rectangle getOBB(ArrayList<Point3F> pointList) {
         ArrayList<Point3F> tempList = new ArrayList<>(pointList);
-        Polygon polygon =  new Polygon(tempList);
+        ArrayList<Point3F> convexHull = QuickHull.getConvexHull(tempList);
+        if (convexHull==null) return null;
+        Polygon polygon =  new Polygon(convexHull);
         return getMinimumBoundingRectangle(polygon);
     }
 
-    public static Point3F[] getMinimumBoundingRectangle(Polygon polygon) {
+    public static Rectangle getMinimumBoundingRectangle(Polygon polygon) {
         Rectangle[] rects = new Rectangle[polygon.edgeCount()];
 
         for(int i = 0; i < polygon.edgeCount(); i++)
@@ -27,7 +31,8 @@ public final class TwoDimensionalOrientedBoundingBox {
             rects[i].rotate(-theta, polygon.getCenter());
         }
 
-        double minArea = Double.MAX_VALUE;
+        double minArea = Double.POSITIVE_INFINITY;
+        double minPerimeter = Double.MAX_VALUE;
         Rectangle box = rects[0];
 
         //Find the bounding box with the smallest area, this is the minimum bounding box
@@ -40,12 +45,18 @@ public final class TwoDimensionalOrientedBoundingBox {
                 box = rects[i];
             }
         }
-        Point3F[]  boxPoints  = new Point3F[4];
 
-        for (int i = 0;  i < 4;  i++) {
-            boxPoints[i] =  box.getPoint(i);
-        }
-        return boxPoints;
+        //Find the bounding box with the smallest perimeter, this is the minimum bounding box
+//        for(int i = 0 ;i < rects.length; i++)
+//        {
+//            double perimeter = rects[i].perimeter();
+//            if(perimeter < minPerimeter)
+//            {
+//                minPerimeter = perimeter;
+//                box = rects[i];
+//            }
+//        }
+        return box;
 
     }
 
@@ -71,7 +82,18 @@ public final class TwoDimensionalOrientedBoundingBox {
         return new Rectangle(minX, minZ, maxX - minX, maxZ - minZ);
     }
 
-    public static double getArea(Point3F[] rectangle) {
+    private static double getArea(Rectangle rect) {
+        Point3F[] points = {
+                rect.points.get(0),
+                rect.points.get(1),
+                rect.points.get(2),
+                rect.points.get(3)
+        };
+
+        return getArea(points);
+    }
+
+    private static double getArea(Point3F[] rectangle) {
 
         double deltaXAB = rectangle[0].x - rectangle[1].x;
         double deltaZAB = rectangle[0].z - rectangle[1].z;
