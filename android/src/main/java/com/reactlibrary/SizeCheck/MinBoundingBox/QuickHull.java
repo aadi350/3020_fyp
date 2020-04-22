@@ -13,13 +13,13 @@ public class QuickHull {
     public static ArrayList<Point3F> getConvexHull(ArrayList<Point3F> points) throws NullPointerException {
         final ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
         if (points.size() <= 4) {
-            return (ArrayList) points.clone();
+            return null;
         }
 
 
         int minPoint = -1, maxPoint = -1;
-        float minX = 10f;
-        float maxX = -10f;
+        float minX = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY;
 
 
 
@@ -76,7 +76,7 @@ public class QuickHull {
             hull.add(insertPosition, p);
             return;
         }
-        float dist = Float.MIN_VALUE;
+        float dist = Float.NEGATIVE_INFINITY;
         int furthestPoint = -1;
         for (int i = 0; i < set.size(); i++) {
             Point3F p = set.get(i);
