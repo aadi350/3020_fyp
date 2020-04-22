@@ -1,8 +1,9 @@
 package com.reactlibrary.SizeCheck;
 
+import android.graphics.PointF;
 import android.util.Log;
 
-import com.google.ar.core.Pose;
+
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.math.Vector3;
 import com.reactlibrary.Builder.CarryOnBuilder;
@@ -12,15 +13,17 @@ import com.reactlibrary.FitCodes;
 import com.reactlibrary.Object.ObjectCodes;
 import com.reactlibrary.Point3F.Point3F;
 import com.reactlibrary.Point3F.PointFilter;
+import com.reactlibrary.SizeCheck.MinBoundingBox.Rectangle;
 import com.reactlibrary.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundingBox;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 
-import static java.lang.Float.NaN;
 
 public class SizeCheckHandler {
+    private static final int DELAY_THRESH = 200;
+    private int delayCount = 0;
+
     private final String TAG = "SizeCheckHandler";
     private Vector3 objectSize = new Vector3();
     private Point3F[] boundingBox;
@@ -32,10 +35,10 @@ public class SizeCheckHandler {
 
     private int currentPointSize = 0, prevPointSize = 0;
     private int calcCount = 0;
-    private final int CALC_LIMIT = 4;
+    private final int CALC_LIMIT = 10;
 
     private int POINT_LOWER_THRESH = 15;
-    private int POINT_LIST_THRESH = 75;
+    private int POINT_LIST_THRESH = 200;
 
     private ArrayList<Point3F> points = new ArrayList<>();
 
@@ -47,47 +50,47 @@ public class SizeCheckHandler {
     }
 
     public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Vector3 anchorNodePosition) {
-        if (pointBuffer == null || nodePosition == null || anchorNodePosition == null)  return NULL;
-        Log.d(TAG, "checkIfFits() start " + anchorNodePosition.toString());
 
+        if (!readyToMeasure()) return NULL;
+        incrementCalcCount();
+
+        if (pointBuffer == null || nodePosition == null || anchorNodePosition == null)  return NULL;
         if (!pointBuffer.hasRemaining()) return NULL;
 
-
-        //if (pointBuffer.remaining() < POINT_LOWER_THRESH) return NULL;
         Log.d(TAG,"try getValid Points");
         try {
             pointList.addAll(getValidPoints(pointBuffer, nodePosition, anchorNodePosition));
-        } catch (NullPointerException e) {
-            Log.d(TAG, e.getLocalizedMessage());
-        }
-
-
-        Log.d(TAG, "try OBB");
-        try {
 
             if (pointList.size() < POINT_LIST_THRESH) {
-                Log.d(TAG, "not Enough Points");
+                Log.d(TAG, "Not enough points:" + pointList.size());
                 return NULL;
             }
-            if (calcCount > CALC_LIMIT) return NULL;
-            calcCount++;
 
+            if (calcCount % CALC_LIMIT != 0 || calcCount > CALC_LIMIT*12) {
+                Log.d(TAG,"CALC_LIMIT");
+                return NULL;
+            }
+
+            Log.d(TAG, "calcCount approved");
+
+            Log.d(TAG, "OBB");
             ArrayList<Point3F> points = pointList;
-            Log.d(TAG,"getOBB() run");
-            boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(points);
-            points.addAll(pointList);
-
+            Rectangle boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(points);
+            float actualLength = (float) boundingBox.height;
+            float actualWidth = (float) boundingBox.width;
+            points = pointList;
+            //points.addAll(pointList);
 
             highPointVal = Math.abs(q.getHighestPoint(points) + anchorNodePosition.y);
 
-            float actualLength = getBoxLength();
-            float actualWidth = getBoxWidth();
 
-            Log.d("DIM", actualLength + " " + actualWidth + " " + highPointVal);
+
+
+
 
             if (actualLength != 0f && actualWidth != 0f) {
                 actualSize.set(actualLength, actualWidth, highPointVal);
-                if (actualSize.equals(Vector3.zero())) return FitCodes.NONE;
+                Log.d(TAG,String.valueOf(objectCode));
                 switch (objectCode) {
                     case CARRYON:
                         objectSize.set(CarryOnBuilder.getObjectSize());
@@ -96,18 +99,22 @@ public class SizeCheckHandler {
                     case PERSONAL:
                         objectSize.set(PersonalItemBuilder.getObjectSize());
                 }
+                Log.d(TAG, "actual" + actualSize.toString());
+                Log.d(TAG, "object: " + objectSize.toString());
+            } else {
+                return FitCodes.NONE;
             }
-            return  compareLimits(objectSize, actualSize);
-        } catch (Exception i) {
-            Log.w(TAG, i.getLocalizedMessage());
+            return compareLimits(objectSize, actualSize);
+        } catch (NullPointerException e) {
+            Log.d(TAG, e.getLocalizedMessage());
         }
 
-
-
-        Log.d(TAG, "object: " + objectSize.toString());
-        Log.d(TAG, "actual" + actualSize.toString());
-
         return FitCodes.NONE;
+    }
+
+    private boolean readyToMeasure() {
+        delayCount++;
+        return delayCount >= DELAY_THRESH;
     }
 
     private boolean enoughPoints(ArrayList<Point3F> pointList) {
@@ -129,7 +136,12 @@ public class SizeCheckHandler {
             throw new NullPointerException("Node Position Null");
         }
         Log.d(TAG,"Buffer: " + pointBuffer.remaining());
-        return PointFilter.getValidPoints(pointBuffer,nodePosition,anchorNodePosition);
+        ArrayList<Point3F> unFilteredList = PointFilter.convertBufferToList(pointBuffer);
+        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(unFilteredList);
+        ArrayList<Point3F> closePoints = PointFilter.filterByRegion(confPoints,anchorNodePosition);
+        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(closePoints, anchorNodePosition);
+        Log.d(TAG, confPoints.size() + " " + closePoints.size() + " " + groundRemoved.size());
+        return groundRemoved;
     }
 
 
@@ -171,9 +183,9 @@ public class SizeCheckHandler {
     private FitCodes compareLimits(Vector3 ref, Vector3 actual) {
         final float DIM_BUFFER = 0.03f;
         FitCodes fits =
-                (       (ref.x + DIM_BUFFER >= actual.x) &&
-                        (ref.y + DIM_BUFFER >= actual.y) &&
-                        (ref.z + DIM_BUFFER >= actual.z)) ?
+                (       (ref.x >= actual.x) &&
+                        (ref.y >= actual.y) &&
+                        (ref.z >= actual.z)) ?
                         FitCodes.FIT : FitCodes.LARGE;
         Log.d(TAG,fits.toString());
         return fits;
@@ -201,5 +213,8 @@ public class SizeCheckHandler {
         return this.highPointVal;
     }
 
+    private void incrementCalcCount() {
+        calcCount++;
+    }
 
 }
