@@ -4,6 +4,10 @@ import android.graphics.PointF;
 import android.util.Log;
 
 
+import androidx.annotation.NonNull;
+
+import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.math.Vector3;
 import com.reactlibrary.Builder.CarryOnBuilder;
@@ -13,6 +17,7 @@ import com.reactlibrary.FitCodes;
 import com.reactlibrary.Object.ObjectCodes;
 import com.reactlibrary.Point3F.Point3F;
 import com.reactlibrary.Point3F.PointFilter;
+import com.reactlibrary.Point3F.PointNormaliser;
 import com.reactlibrary.SizeCheck.MinBoundingBox.Rectangle;
 import com.reactlibrary.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundingBox;
 
@@ -26,10 +31,12 @@ public class SizeCheckHandler {
 
     private final String TAG = "SizeCheckHandler";
     private Vector3 objectSize = new Vector3();
-    private Point3F[] boundingBox;
     private ArrayList<Point3F> pointList = new ArrayList<>();
     private QuickSort q = new QuickSort();
+    private Vector3 anchorNodePosition;
+    private Pose androidSensorPose;
     private float highPointVal;
+    private ObjectCodes objectCode;
     private Vector3 actualSize = new Vector3(Vector3.zero());
     private FitCodes NULL = FitCodes.NONE;
 
@@ -37,41 +44,53 @@ public class SizeCheckHandler {
     private int calcCount = 0;
     private final int CALC_LIMIT = 10;
 
-    private int POINT_LOWER_THRESH = 15;
     private int POINT_LIST_THRESH = 200;
 
-    private ArrayList<Point3F> points = new ArrayList<>();
-
-    public void flushListWhenNotTrackging(TrackingState trackingState) {
+    public void flushListWhenNotTracking(TrackingState trackingState) {
         if (trackingState == TrackingState.STOPPED) {
             pointList.clear();
         }
 
     }
 
-    public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Vector3 anchorNodePosition) {
+    public void setObjectType(ObjectCodes objectCode) {
+        this.objectCode = objectCode;
+    }
 
+    public void updateAnchor(Vector3 anchorNodePosition) {
+        this.anchorNodePosition = anchorNodePosition;
+    }
+
+    public void loadPointCloud(PointCloud pointCloud) {
+        this.pointList = PointFilter.convertCloudToArrayList(pointCloud);
+    }
+
+    public void updateSensorPose(Pose androidSensorPose) {
+        this.androidSensorPose = androidSensorPose;
+    }
+
+    //public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Vector3 anchorNodePosition) {
+    public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 anchorNodePosition, PointCloud pointCloud, Pose androidSensorPose) {
         if (!readyToMeasure()) return NULL;
         incrementCalcCount();
 
-        if (pointBuffer == null || nodePosition == null || anchorNodePosition == null)  return NULL;
-        if (!pointBuffer.hasRemaining()) return NULL;
+
+//        if (!pointBuffer.hasRemaining()) return NULL;
 
         Log.d(TAG,"try getValid Points");
         try {
-            pointList.addAll(getValidPoints(pointBuffer, nodePosition, anchorNodePosition));
+            pointList.addAll(getValidPoints(pointCloud, androidSensorPose, anchorNodePosition));
 
             if (pointList.size() < POINT_LIST_THRESH) {
                 Log.d(TAG, "Not enough points:" + pointList.size());
                 return NULL;
             }
 
-            if (calcCount % CALC_LIMIT != 0 || calcCount > CALC_LIMIT*12) {
+            if (calcCount % CALC_LIMIT != 0) {
                 Log.d(TAG,"CALC_LIMIT");
                 return NULL;
             }
 
-            Log.d(TAG, "calcCount approved");
 
             Log.d(TAG, "OBB");
             ArrayList<Point3F> points = pointList;
@@ -127,6 +146,16 @@ public class SizeCheckHandler {
         return false;
     }
 
+    private ArrayList<Point3F> getValidPoints(PointCloud pointCloud, Pose androidSensorPose, Vector3 anchorNodePosition) {
+        //TODO revise
+        ArrayList<Point3F> normalisedPoints = PointFilter.convertCloudToArrayList(pointCloud);//pn.normalisePoints(pointCloud,androidSensorPose);
+        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(normalisedPoints);
+        //ArrayList<Point3F> closePoints = PointFilter.filterByRegion(confPoints,anchorNodePosition);
+        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(confPoints, anchorNodePosition);
+        return groundRemoved;
+    }
+
+
     private ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition, Vector3 anchorNodePosition) throws NullPointerException{
 
         if (pointBuffer == null) {
@@ -180,37 +209,15 @@ public class SizeCheckHandler {
     }
 
 
-    private FitCodes compareLimits(Vector3 ref, Vector3 actual) {
+    public FitCodes compareLimits(Vector3 ref, Vector3 actual) {
         final float DIM_BUFFER = 0.03f;
         FitCodes fits =
-                (       (ref.x >= actual.x) &&
-                        (ref.y >= actual.y) &&
-                        (ref.z >= actual.z)) ?
+                (       (ref.x >= actual.x - DIM_BUFFER) &&
+                        (ref.y >= actual.y - DIM_BUFFER) &&
+                        (ref.z >= actual.z - DIM_BUFFER)) ?
                         FitCodes.FIT : FitCodes.LARGE;
         Log.d(TAG,fits.toString());
         return fits;
-    }
-
-
-    public float getBoxLength() {
-        return getBoxDimLW(this.boundingBox)[0];
-    }
-
-    public float getBoxWidth() {
-        return getBoxDimLW(this.boundingBox)[1];
-    }
-
-    public float getBoxLength(Point3F[] boundingBox) {
-        return getBoxDimLW(boundingBox)[0];
-    }
-
-    public float getBoxWidth(Point3F[] boundingBox) {
-        return getBoxDimLW(boundingBox)[1];
-    }
-
-    public float getHighPointVal() {
-        if (this.highPointVal < 0f) return -1f;
-        return this.highPointVal;
     }
 
     private void incrementCalcCount() {
