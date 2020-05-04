@@ -1,11 +1,14 @@
 package com.reactlibrary;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageButton;
@@ -14,6 +17,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Config;
@@ -39,14 +44,25 @@ import com.reactlibrary.Object.ObjectCodes;
 import com.reactlibrary.ColourChange.ColourChangeHandler;
 import com.reactlibrary.SizeCheck.SizeCheckHandler;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.prefs.Preferences;
+
+import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 
 public class ARActivity extends AppCompatActivity {
-    private static final String SCN_TAG = "OnSceneUpdate";
     private static final String TAG = "ARActivity";
     private static final double MIN_OPENGL_VERSION = 3.0;
 
@@ -64,18 +80,18 @@ public class ARActivity extends AppCompatActivity {
     private ColourChangeHandler colourChangeHandler;
     private TransformableNode node;
     private Pose planePose;
+    private Pose androidSensorPose;
+
 
     private SizeCheckHandler sizeHandler;
     private ObjectCodes currentModel;
 
     //local coordinates of placed object anchor
-    private Vector3 anchorPosition;
     private RadioGroup radioGroup;
     private AnchorNode anchorNode;
-    private List<Float[]> positions3D;
     PointCloudVisualiser pcVis;
 
-
+    public final int AR_LAYOUT = R.layout.ar_layout;
     private Session session;
     private Config config;
 
@@ -83,23 +99,19 @@ public class ARActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         //RN Bridge
         Intent intent = getIntent();
-
         super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.ar_layout);
-        positions3D = new ArrayList<>();
+        requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE}, 1);
+        setContentView(AR_LAYOUT);
         sizeHandler = new SizeCheckHandler();
+        sizeHandler.setObject(ObjectCodes.CARRYON);
 
         //connecting views
         radioGroup = findViewById(R.id.change_type);
         onScreenText = findViewById(R.id.onScreenText);
         removeObjects = findViewById(R.id.removeObjects);
 
-
-
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
-
 
         arFragment.setOnTapArPlaneListener(
             (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
@@ -124,9 +136,7 @@ public class ARActivity extends AppCompatActivity {
 
         //buttons
         radioGroup.setOnCheckedChangeListener(
-        (group, checkedId) -> {
-            setModel(checkedId);
-        }
+                (group, checkedId) -> setModel(checkedId)
             );
 
 //
@@ -190,9 +200,8 @@ public class ARActivity extends AppCompatActivity {
         //Remove an anchor node
         if (nodeToremove != null) {
             arFragment.getArSceneView().getScene().removeChild(nodeToremove);
-            nodeToremove.getAnchor().detach();
+            Objects.requireNonNull(nodeToremove.getAnchor()).detach();
             nodeToremove.setParent(null);
-            nodeToremove = null;
         }
     }
 
@@ -220,7 +229,6 @@ public class ARActivity extends AppCompatActivity {
         // Create the Anchor at hit result
         Anchor anchor = hitResult.createAnchor();
         anchorNode = new AnchorNode(anchor);
-        anchorPosition = anchorNode.getWorldPosition();
         //attach arFragment to hitResult via anchorNode
         anchorNode.setParent(arFragment.getArSceneView().getScene());
     }
@@ -250,24 +258,20 @@ public class ARActivity extends AppCompatActivity {
     private void onSceneUpdate(FrameTime frameTime) {
         Log.d(TAG,"onSceneUpdate");
         if (!scan) return;
-
-
-
-        //disablePlaneDetection();
         setOnScreenText(arFragment);
         Frame frame = arFragment.getArSceneView().getArFrame();
-        TrackingState trackingState = frame.getCamera().getTrackingState();
-        sizeHandler.flushListWhenNotTrackging(trackingState);
         PointCloud pointCloud = frame.acquirePointCloud();
 
+//        saveCloud(pointCloud, i, anchorPosition);
+//        i++;
 
-
+        androidSensorPose = frame.getAndroidSensorPose();
+        sizeHandler.updateAnchor(this.anchorNode.getWorldPosition());
 
         pcVis.update(pointCloud);
 
-        FloatBuffer points = pointCloud.getPoints();
-
-        FitCodes fitCode = sizeHandler.checkIfFits(currentModel,node.getWorldPosition(),points,node.getWorldPosition());
+        sizeHandler.loadPointCloud(pointCloud);
+        FitCodes fitCode = sizeHandler.checkIfFits();
         if (fitCode != null && fitCode != FitCodes.NONE) {
             colourChangeHandler.setObject(fitCode);
         }
@@ -276,19 +280,21 @@ public class ARActivity extends AppCompatActivity {
 
     private void setModel(int toggleId) {
         removeAllModels();
-
         if (toggleId == PERSONAL_ID) {
             currentModel = ObjectCodes.PERSONAL;
             colourChangeHandler.updateObject(currentModel);
             colourChangeHandler.setObject(FitCodes.NONE);
+            sizeHandler.setObject(ObjectCodes.PERSONAL);
         } else if (toggleId == DUFFEL_ID) {
             currentModel = ObjectCodes.DUFFEL;
             colourChangeHandler.updateObject(currentModel);
             colourChangeHandler.setObject(FitCodes.NONE);
+            sizeHandler.setObject(ObjectCodes.DUFFEL);
         } else {
             currentModel = ObjectCodes.CARRYON;
             colourChangeHandler.updateObject(currentModel);
             colourChangeHandler.setObject(FitCodes.NONE);
+            sizeHandler.setObject(ObjectCodes.CARRYON);
         }
         Log.d("setModel", "exit");
     }
@@ -358,7 +364,6 @@ public class ARActivity extends AppCompatActivity {
         } catch (CameraNotAvailableException ex) {
             Log.e(TAG,"No Camera");
             finish();
-            return;
         }
 
     }
@@ -395,4 +400,73 @@ public class ARActivity extends AppCompatActivity {
             }
         }
     }
+    //TODO remove
+    private void saveCloud(PointCloud pointCloud, int i, Vector3 anchorPosition) {
+        String fileName = "cloud" + i;
+        File root = android.os.Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        File dir = new File(root.getAbsolutePath());
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        Log.d(TAG,"saveCloud()");
+        int m = 0, n = 0;
+
+        try {
+            File file = new File(root + "/" + fileName+".txt");
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            PrintWriter pw = new PrintWriter(fileOutputStream);
+
+            FloatBuffer points = pointCloud.getPoints();
+            IntBuffer ids = pointCloud.getIds();
+            Log.d("REM",points.remaining() + " " + ids.remaining());
+            while (points.hasRemaining()) {
+                String p = points.get() + " " + points.get() + " " + points.get() + " " + points.get() + " " + ids.get() + " " + anchorPosition.x + " " + anchorPosition.y + " " + anchorPosition.z;
+                pw.println(p);
+            }
+            pw.flush();
+            pw.close();
+            fileOutputStream.close();
+
+        } catch (Exception e) {
+            Log.e(TAG,"FileWriter() " + e.getLocalizedMessage());
+             e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case 112: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "The app was allowed to write to your storage!", Toast.LENGTH_LONG).show();
+                    // Reload the activity with permission granted or use the features what required the permission
+                } else {
+                    Toast.makeText(this, "The app was not allowed to write to your storage. Hence, it cannot function properly. Please consider granting it this permission", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+
+    private void requestPermission(Activity context) {
+        boolean hasPermission = (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+        if (!hasPermission) {
+            ActivityCompat.requestPermissions(context,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    112);
+        } else {
+            // You are allowed to write external storage:
+            String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/new_folder";
+            File storageDir = new File(path);
+            if (!storageDir.exists() && !storageDir.mkdirs()) {
+                // This should never happen - log handled exception!
+            }
+        }
+    }
 }
+
+
+
