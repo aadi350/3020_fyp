@@ -1,10 +1,7 @@
 package com.reactlibrary.SizeCheck;
 
-import android.graphics.PointF;
 import android.util.Log;
 
-
-import androidx.annotation.NonNull;
 
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
@@ -12,17 +9,20 @@ import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.math.Vector3;
 import com.reactlibrary.Builder.CarryOnBuilder;
 import com.reactlibrary.Builder.DuffelBuilder;
+import com.reactlibrary.Builder.ObjectSizes;
 import com.reactlibrary.Builder.PersonalItemBuilder;
 import com.reactlibrary.FitCodes;
 import com.reactlibrary.Object.ObjectCodes;
 import com.reactlibrary.Point3F.Point3F;
 import com.reactlibrary.Point3F.PointFilter;
-import com.reactlibrary.Point3F.PointNormaliser;
+import com.reactlibrary.SizeCheck.MinBoundingBox.QuickHull;
 import com.reactlibrary.SizeCheck.MinBoundingBox.Rectangle;
 import com.reactlibrary.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundingBox;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+
+import static com.facebook.infer.annotation.Assertions.assertNotNull;
 
 
 public class SizeCheckHandler {
@@ -34,194 +34,128 @@ public class SizeCheckHandler {
     private ArrayList<Point3F> pointList = new ArrayList<>();
     private QuickSort q = new QuickSort();
     private Vector3 anchorNodePosition;
-    private Pose androidSensorPose;
-    private float highPointVal;
     private ObjectCodes objectCode;
     private Vector3 actualSize = new Vector3(Vector3.zero());
     private FitCodes NULL = FitCodes.NONE;
-
-    private int currentPointSize = 0, prevPointSize = 0;
-    private int calcCount = 0;
-    private final int CALC_LIMIT = 10;
-
-    private int POINT_LIST_THRESH = 200;
-
-    public void flushListWhenNotTracking(TrackingState trackingState) {
-        if (trackingState == TrackingState.STOPPED) {
-            pointList.clear();
-        }
-
-    }
-
-    public void setObjectType(ObjectCodes objectCode) {
-        this.objectCode = objectCode;
-    }
+    private Vector3 NULL_VECTOR = new Vector3(-1f,-1f,-1f);
 
     public void updateAnchor(Vector3 anchorNodePosition) {
         this.anchorNodePosition = anchorNodePosition;
+        Log.i(TAG,"updateAnchor()");
+    }
+
+    public void loadPointList(ArrayList<Point3F> pointList) {
+        Log.d(TAG,"loadPointList()");
+        this.pointList = PointFilter.filterPoints(pointList,anchorNodePosition);
     }
 
     public void loadPointCloud(PointCloud pointCloud) {
-        this.pointList = PointFilter.convertCloudToArrayList(pointCloud);
+        ArrayList<Point3F> tempList =  PointFilter.convertCloudToArrayList(pointCloud);
+        this.pointList = PointFilter.filterPoints(tempList,anchorNodePosition);
+        Log.i(TAG,"loadPointCloud()");
     }
 
-    public void updateSensorPose(Pose androidSensorPose) {
-        this.androidSensorPose = androidSensorPose;
+    public void setObject(ObjectCodes objectCode) {
+        Log.d(TAG,"setObject");
+        this.objectCode = objectCode;
+        switch (objectCode) {
+            case DUFFEL:
+                objectSize = ObjectSizes.getDuffel();
+                break;
+            case CARRYON:
+                objectSize = ObjectSizes.getCarryOn();
+                break;
+            case PERSONAL:
+                objectSize = ObjectSizes.getPersonal();
+                break;
+        }
     }
 
-    //public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 nodePosition, FloatBuffer pointBuffer, Vector3 anchorNodePosition) {
-    public FitCodes checkIfFits(ObjectCodes objectCode, Vector3 anchorNodePosition, PointCloud pointCloud, Pose androidSensorPose) {
-        if (!readyToMeasure()) return NULL;
-        incrementCalcCount();
+    public ObjectCodes getObjectType() {
+        return this.objectCode;
+    }
 
-
-//        if (!pointBuffer.hasRemaining()) return NULL;
-
-        Log.d(TAG,"try getValid Points");
+    public Vector3 setActualSize(ArrayList<Point3F> pointList) {
+        if (pointList.size() < 15) return NULL_VECTOR;
         try {
-            pointList.addAll(getValidPoints(pointCloud, androidSensorPose, anchorNodePosition));
+            float[] boxDim = calcBox(pointList);
+            float height = getHighPointVal(pointList);
 
-            if (pointList.size() < POINT_LIST_THRESH) {
-                Log.d(TAG, "Not enough points:" + pointList.size());
-                return NULL;
-            }
-
-            if (calcCount % CALC_LIMIT != 0) {
-                Log.d(TAG,"CALC_LIMIT");
-                return NULL;
-            }
-
-
-            Log.d(TAG, "OBB");
-            ArrayList<Point3F> points = pointList;
-            Rectangle boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(points);
-            float actualLength = (float) boundingBox.height;
-            float actualWidth = (float) boundingBox.width;
-            points = pointList;
-            //points.addAll(pointList);
-
-            highPointVal = Math.abs(q.getHighestPoint(points) + anchorNodePosition.y);
-
-
-
-
-
-
-            if (actualLength != 0f && actualWidth != 0f) {
-                actualSize.set(actualLength, actualWidth, highPointVal);
-                Log.d(TAG,String.valueOf(objectCode));
-                switch (objectCode) {
-                    case CARRYON:
-                        objectSize.set(CarryOnBuilder.getObjectSize());
-                    case DUFFEL:
-                        objectSize.set(DuffelBuilder.getObjectSize());
-                    case PERSONAL:
-                        objectSize.set(PersonalItemBuilder.getObjectSize());
-                }
-                Log.d(TAG, "actual" + actualSize.toString());
-                Log.d(TAG, "object: " + objectSize.toString());
-            } else {
-                return FitCodes.NONE;
-            }
-            return compareLimits(objectSize, actualSize);
+            return new Vector3(
+                    boxDim[0],
+                    boxDim[1],
+                    height
+            );
         } catch (NullPointerException e) {
-            Log.d(TAG, e.getLocalizedMessage());
+            return NULL_VECTOR;
         }
-
-        return FitCodes.NONE;
     }
 
-    private boolean readyToMeasure() {
-        delayCount++;
-        return delayCount >= DELAY_THRESH;
+    public Vector3 getBoxDim() {
+        return setActualSize(pointList);
     }
 
-    private boolean enoughPoints(ArrayList<Point3F> pointList) {
-        final int POINT_INCREASE_THRESH = 4;
-        currentPointSize = pointList.size();
-        if ((currentPointSize - prevPointSize) > POINT_INCREASE_THRESH) {
-            prevPointSize = currentPointSize;
-            return true;
+    public FitCodes checkIfFits() {
+        if (notReadyToMeasure()) return NULL;
+        Vector3 calcSize = setActualSize(pointList);
+
+        if (calcSize.equals(NULL_VECTOR) ) {
+            Log.d(TAG,"calcSize null");
+            return NULL;
         }
-        return false;
+        Log.d(TAG, calcSize.toString());
+
+        actualSize = calcSize;
+        return compareLimits(
+                objectSize,
+                actualSize
+        );
     }
 
-    private ArrayList<Point3F> getValidPoints(PointCloud pointCloud, Pose androidSensorPose, Vector3 anchorNodePosition) {
-        //TODO revise
-        ArrayList<Point3F> normalisedPoints = PointFilter.convertCloudToArrayList(pointCloud);//pn.normalisePoints(pointCloud,androidSensorPose);
-        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(normalisedPoints);
-        //ArrayList<Point3F> closePoints = PointFilter.filterByRegion(confPoints,anchorNodePosition);
-        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(confPoints, anchorNodePosition);
-        return groundRemoved;
-    }
+    private float[] calcBox(ArrayList<Point3F> pointList) throws NullPointerException {
+        float[] boxDim;
+        if (pointList == null) throw new NullPointerException("PointList null");
+        Rectangle boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
 
-
-    private ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 nodePosition, Vector3 anchorNodePosition) throws NullPointerException{
-
-        if (pointBuffer == null) {
-            throw new NullPointerException("pointBuffer null");
+        assert boundingBox != null;
+        if (boundingBox.height < boundingBox.width) {
+            boxDim = new float[] {
+                    (float) boundingBox.width,
+                    (float) boundingBox.height
+            };
+        } else {
+            boxDim = new float[] {
+                    (float) boundingBox.height,
+                    (float) boundingBox.width
+            };
         }
-        if (nodePosition == null)  {
-            throw new NullPointerException("Node Position Null");
-        }
-        Log.d(TAG,"Buffer: " + pointBuffer.remaining());
-        ArrayList<Point3F> unFilteredList = PointFilter.convertBufferToList(pointBuffer);
-        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(unFilteredList);
-        ArrayList<Point3F> closePoints = PointFilter.filterByRegion(confPoints,anchorNodePosition);
-        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(closePoints, anchorNodePosition);
-        Log.d(TAG, confPoints.size() + " " + closePoints.size() + " " + groundRemoved.size());
-        return groundRemoved;
-    }
-
-
-
-
-    public float[] getBoxDimLW(Point3F[] boundingBox) {
-        float[] inputNullArray = {-1f,-1f};
-        if (boundingBox == null || boundingBox.length != 4) return inputNullArray;
-
-
-        float xOne = boundingBox[1].x;
-        float xTwo = boundingBox[2].x;
-        float zOne = boundingBox[1].z;
-        float zTwo = boundingBox[2].z;
-
-        float sideOne = (float) Math.sqrt(Math.pow(xTwo-xOne,2) + Math.pow(zTwo-zOne,2));
-
-        float xThree = boundingBox[3].x;
-        float zThree = boundingBox[3].z;
-
-        float sideTwo = (float) Math.sqrt((xThree-xTwo)*(xThree-xTwo) + (zThree-zTwo)*(zThree-zTwo));
-        Log.d("DIM", xOne + " " + xTwo + " " + zOne + " " + zTwo);
-        if (Float.isNaN(sideOne) || Float.isNaN(sideTwo)) {
-            //this.pointList.clear();
-            return new float[] {-1f,-1f};
-        }
-
-        if (sideOne > sideTwo) {
-            float[] boxDim = {sideOne,sideTwo};
-            return boxDim;
-        }
-
-        float[] boxDim = {sideTwo,sideOne};
         return boxDim;
-
     }
 
+    private float getHighPointVal(ArrayList<Point3F> pointList) {
+        QuickSort q = new QuickSort();
+        return q.getHighestPoint(pointList);
+    }
+
+
+    private boolean notReadyToMeasure() {
+        delayCount++;
+        return delayCount < DELAY_THRESH;
+    }
 
     public FitCodes compareLimits(Vector3 ref, Vector3 actual) {
-        final float DIM_BUFFER = 0.03f;
+        if (ref == null) return NULL;
         FitCodes fits =
-                (       (ref.x >= actual.x - DIM_BUFFER) &&
-                        (ref.y >= actual.y - DIM_BUFFER) &&
-                        (ref.z >= actual.z - DIM_BUFFER)) ?
+                (       (ref.x >= actual.x) &&
+                        (ref.y >= actual.y) &&
+                        (ref.z >= actual.z)) ?
                         FitCodes.FIT : FitCodes.LARGE;
         Log.d(TAG,fits.toString());
         return fits;
     }
 
-    private void incrementCalcCount() {
-        calcCount++;
+    public ArrayList<Point3F> getPointList() {
+        return this.pointList;
     }
 
 }
