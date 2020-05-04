@@ -7,6 +7,7 @@ public class Point3F extends Object{
     public float y;
     public float z;
     public float c;
+    public int id;
 
     public Point3F() {
         super();
@@ -23,6 +24,15 @@ public class Point3F extends Object{
         this.y = y;
         this.z = z;
         this.c = c;
+    }
+
+
+    public Point3F(float x, float y, float z, float c, int id) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.c = c;
+        this.id = id;
     }
 
     public Point3F(@NonNull Point3F p){
