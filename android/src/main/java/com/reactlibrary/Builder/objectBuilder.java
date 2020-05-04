@@ -51,7 +51,7 @@ public abstract class objectBuilder extends AppCompatActivity {
         this.objectNeutral.setObjectLimits(objectSize);
     }
 
-    public static Vector3 getObjectSize() {
+    public Vector3 getObjectSize() {
         return objectSize;
     }
 }
