@@ -13,7 +13,7 @@ public class QuickHull {
     public static ArrayList<Point3F> getConvexHull(ArrayList<Point3F> points) throws NullPointerException {
         final ArrayList<Point3F> convexHull = new ArrayList<Point3F>();
         if (points.size() <= 4) {
-            return null;
+            return points;
         }
 
 
