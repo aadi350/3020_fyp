@@ -1,5 +1,6 @@
 package com.reactlibrary.SizeCheck;
 
+import android.icu.util.Freezable;
 import android.util.Log;
 
 
@@ -36,8 +37,8 @@ public class SizeCheckHandler {
     private Vector3 anchorNodePosition;
     private ObjectCodes objectCode;
     private Vector3 actualSize = new Vector3(Vector3.zero());
-    private FitCodes NULL = FitCodes.NONE;
     private Vector3 NULL_VECTOR = new Vector3(-1f,-1f,-1f);
+    private FitCodes fitCode;
 
     public void updateAnchor(Vector3 anchorNodePosition) {
         this.anchorNodePosition = anchorNodePosition;
@@ -96,20 +97,29 @@ public class SizeCheckHandler {
     }
 
     public FitCodes checkIfFits() {
-        if (notReadyToMeasure()) return NULL;
+        if (notReadyToMeasure())  {
+            this.fitCode = FitCodes.NONE;
+            return fitCode;
+        };
         Vector3 calcSize = setActualSize(pointList);
 
         if (calcSize.equals(NULL_VECTOR) ) {
             Log.d(TAG,"calcSize null");
-            return NULL;
+            this.fitCode = FitCodes.NONE;
+            return fitCode;
         }
         Log.d(TAG, calcSize.toString());
 
         actualSize = calcSize;
-        return compareLimits(
-                objectSize,
-                actualSize
-        );
+       try {
+           return compareLimits(
+                   objectSize,
+                   actualSize
+           );
+       } catch (NullPointerException e){
+           this.fitCode = FitCodes.NONE;
+           return this.fitCode;
+       }
     }
 
     private float[] calcBox(ArrayList<Point3F> pointList) throws NullPointerException {
@@ -143,8 +153,9 @@ public class SizeCheckHandler {
         return delayCount < DELAY_THRESH;
     }
 
-    public FitCodes compareLimits(Vector3 ref, Vector3 actual) {
-        if (ref == null) return NULL;
+    public FitCodes compareLimits(Vector3 ref, Vector3 actual) throws NullPointerException{
+        if (ref == null) throw new NullPointerException("compareLimits: Object reference null");
+
         FitCodes fits =
                 (       (ref.x >= actual.x) &&
                         (ref.y >= actual.y) &&
