@@ -23,17 +23,13 @@ import com.reactlibrary.SizeCheck.MinBoundingBox.TwoDimensionalOrientedBoundingB
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
-import static com.facebook.infer.annotation.Assertions.assertNotNull;
 
 
 public class SizeCheckHandler {
-    private static final int DELAY_THRESH = 200;
-    private int delayCount = 0;
 
     private final String TAG = "SizeCheckHandler";
     private Vector3 objectSize = new Vector3();
     private ArrayList<Point3F> pointList = new ArrayList<>();
-    private QuickSort q = new QuickSort();
     private Vector3 anchorNodePosition;
     private ObjectCodes objectCode;
     private Vector3 actualSize = new Vector3(Vector3.zero());
@@ -52,8 +48,8 @@ public class SizeCheckHandler {
 
     public void loadPointCloud(PointCloud pointCloud) {
         ArrayList<Point3F> tempList =  PointFilter.convertCloudToArrayList(pointCloud);
-        this.pointList = PointFilter.filterPoints(tempList,anchorNodePosition);
-        Log.i(TAG,"loadPointCloud()");
+        this.pointList.addAll(PointFilter.filterPoints(tempList,anchorNodePosition));
+        Log.i(TAG,"loadPointCloud(): " + pointList.size());
     }
 
     public void setObject(ObjectCodes objectCode) {
@@ -77,10 +73,11 @@ public class SizeCheckHandler {
     }
 
     public Vector3 setActualSize(ArrayList<Point3F> pointList) {
-        if (pointList.size() < 15) return NULL_VECTOR;
+        Log.d(TAG,"setActualSize");
+        if (pointList.size() < 50) return NULL_VECTOR;
         try {
             float[] boxDim = calcBox(pointList);
-            float height = getHighPointVal(pointList);
+            float height = getHighPointVal(pointList) + anchorNodePosition.y;
 
             return new Vector3(
                     boxDim[0],
@@ -97,10 +94,7 @@ public class SizeCheckHandler {
     }
 
     public FitCodes checkIfFits() {
-        if (notReadyToMeasure())  {
-            this.fitCode = FitCodes.NONE;
-            return fitCode;
-        };
+        Log.d(TAG,"checkIfFits");
         Vector3 calcSize = setActualSize(pointList);
 
         if (calcSize.equals(NULL_VECTOR) ) {
@@ -112,6 +106,7 @@ public class SizeCheckHandler {
 
         actualSize = calcSize;
        try {
+           Log.d(TAG,"compareLimits");
            return compareLimits(
                    objectSize,
                    actualSize
@@ -123,6 +118,7 @@ public class SizeCheckHandler {
     }
 
     private float[] calcBox(ArrayList<Point3F> pointList) throws NullPointerException {
+        Log.d(TAG,"calcBox");
         float[] boxDim;
         if (pointList == null) throw new NullPointerException("PointList null");
         Rectangle boundingBox = TwoDimensionalOrientedBoundingBox.getOBB(pointList);
@@ -148,12 +144,8 @@ public class SizeCheckHandler {
     }
 
 
-    private boolean notReadyToMeasure() {
-        delayCount++;
-        return delayCount < DELAY_THRESH;
-    }
-
     public FitCodes compareLimits(Vector3 ref, Vector3 actual) throws NullPointerException{
+        Log.d(TAG,"compareLimits");
         if (ref == null) throw new NullPointerException("compareLimits: Object reference null");
 
         FitCodes fits =

@@ -14,22 +14,22 @@ import java.util.List;
 
 
 public class PointFilter {
-    private static final float POINT_CONFIDENCE_MIN = 0.7f;
+    private static final float POINT_CONFIDENCE_MIN = 0.5f;
 
     private static final float GROUND_THRESH_LIMIT = 0.05f;
     private static final float REGION_LIMITS = 0.5f;
-    private static final float CAMERA_DISTANCE_LIMIT = 0.5f;
 
     private static final String TAG = "POINT_FILTER";
 
     public static ArrayList<Point3F> filterPoints(ArrayList<Point3F> arrayList, Vector3 nodePosition) {
         assert (arrayList != null && nodePosition != null);
 
-        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(arrayList);
-        ArrayList<Point3F> closePoints = PointFilter.filterByRegion(confPoints,nodePosition);
-        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(closePoints, nodePosition);
+        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(arrayList, nodePosition);
+        ArrayList<Point3F> closePoints = PointFilter.filterByRegion(groundRemoved,nodePosition);
+        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(closePoints);
+        Log.d(TAG,"filterPoints: " + groundRemoved.size() + " "  + closePoints.size() + " " + confPoints.size());
 
-        return groundRemoved;
+        return confPoints;
     }
 
 

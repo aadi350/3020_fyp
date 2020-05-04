@@ -28,7 +28,6 @@ import com.google.ar.core.Plane;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
-import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.sceneform.AnchorNode;
@@ -54,6 +53,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.prefs.Preferences;
@@ -81,6 +82,7 @@ public class ARActivity extends AppCompatActivity {
     private TransformableNode node;
     private Pose planePose;
     private Pose androidSensorPose;
+    private long cTime = 0, pTime = 0;
 
 
     private SizeCheckHandler sizeHandler;
@@ -139,7 +141,6 @@ public class ARActivity extends AppCompatActivity {
                 (group, checkedId) -> setModel(checkedId)
             );
 
-//
         removeObjects.setOnClickListener(
                 w -> {
                     if (objectPlaced) {
@@ -266,16 +267,33 @@ public class ARActivity extends AppCompatActivity {
 //        i++;
 
         androidSensorPose = frame.getAndroidSensorPose();
-        sizeHandler.updateAnchor(this.anchorNode.getWorldPosition());
+        sizeHandler.updateAnchor(node.getWorldPosition());
 
         pcVis.update(pointCloud);
 
         sizeHandler.loadPointCloud(pointCloud);
+
+
+        if (!readyToMeasure()) return;
+
+        Log.d("SizeCheckHandler","readyToMeasure");
         FitCodes fitCode = sizeHandler.checkIfFits();
         if (fitCode != null && fitCode != FitCodes.NONE) {
             colourChangeHandler.setObject(fitCode);
         }
         pointCloud.release();
+    }
+
+    private boolean readyToMeasure() {
+        final long TIME_3_SECONDS = 3000;
+
+        cTime = System.currentTimeMillis();
+        if (cTime - pTime > TIME_3_SECONDS) {
+            pTime = cTime;
+            Log.d(TAG,"(true)");
+            return true;
+        }
+        return false;
     }
 
     private void setModel(int toggleId) {
