@@ -130,4 +130,8 @@ public class Polygon {
             p.z = (float) z;
         }
     }
+
+    public ArrayList<Point3F> getPoints() {
+        return this.points;
+    }
 }
