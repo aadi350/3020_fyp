@@ -4,6 +4,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
 import com.google.ar.sceneform.math.Vector3;
 
@@ -21,16 +22,16 @@ public class PointFilter {
 
     private static final String TAG = "POINT_FILTER";
 
-    public static ArrayList<Point3F> getValidPoints(FloatBuffer pointBuffer, Vector3 node, Vector3 anchorNodePosition) {
-    //parent method to filter FloatBuffer of raw point data
+    public static ArrayList<Point3F> filterPoints(ArrayList<Point3F> arrayList, Vector3 nodePosition) {
+        assert (arrayList != null && nodePosition != null);
 
-        ArrayList<Point3F> pointList = convertBufferToList(pointBuffer);
-        ArrayList<Point3F> confPoints = filterByConfidence(pointList);
-        ArrayList<Point3F> closePoints = filterByRegion(confPoints, node);
-        ArrayList<Point3F> filteredPoints = filterGround(closePoints,anchorNodePosition);
-        Log.d(TAG, confPoints.size() + " " + closePoints.size() + " " + filteredPoints.size());
-        return filteredPoints;
+        ArrayList<Point3F> confPoints = PointFilter.filterByConfidence(arrayList);
+        ArrayList<Point3F> closePoints = PointFilter.filterByRegion(confPoints,nodePosition);
+        ArrayList<Point3F> groundRemoved = PointFilter.filterGround(closePoints, nodePosition);
+
+        return groundRemoved;
     }
+
 
     public static ArrayList<Point3F> convertBufferToList(FloatBuffer pointBuffer) {
         ArrayList<Point3F> pointList = new ArrayList<>();
@@ -50,6 +51,23 @@ public class PointFilter {
         return pointList;
     }
 
+    public static ArrayList<Point3F> convertCloudToArrayList(@NonNull PointCloud pointCloud) {
+        ArrayList<Point3F> pointList = new ArrayList<>();
+        FloatBuffer pointBuffer = pointCloud.getPoints();
+        while (pointBuffer.hasRemaining()) {
+            pointList.add(
+                    new Point3F(
+                            pointBuffer.get(),
+                            pointBuffer.get(),
+                            pointBuffer.get(),
+                            pointBuffer.get()
+                    )
+            );
+        }
+        return pointList;
+    }
+
+
     public static ArrayList<Point3F> filterByConfidence(ArrayList<Point3F> pointList) {
         ArrayList<Point3F> filteredList = new ArrayList<>();
 
@@ -64,21 +82,6 @@ public class PointFilter {
         return filteredList;
     }
 
-    public static ArrayList<Point3F> filterByDistanceToCamera(ArrayList<Point3F> pointList, Pose cameraPose) {
-        if ((pointList == null) || (cameraPose == null)) return null;
-        ArrayList<Point3F> filteredList = new ArrayList<>();
-        for (Point3F point : pointList) {
-            float dx = point.x - cameraPose.tx();
-            float dy = point.y - cameraPose.ty();
-            float dz = point.z - cameraPose.tz();
-
-            float dist = (float) Math.sqrt(dx*dx + dy*dy + dz*dz);
-            if (dist < CAMERA_DISTANCE_LIMIT) {
-                filteredList.add(point);
-            }
-        }
-        return filteredList;
-    }
 
     public static ArrayList<Point3F> filterByRegion (@NonNull ArrayList<Point3F> pointList,Vector3 referencePoint) {
         ArrayList<Point3F> points = new ArrayList<>();
@@ -105,28 +108,13 @@ public class PointFilter {
         if (pointList == null) return filteredList;
 
         for (Point3F point : pointList) {
-            if (Math.abs(point.y - anchorNodePosition.y) >= GROUND_THRESH_LIMIT ) {
+            if ((point.y - anchorNodePosition.y) >= GROUND_THRESH_LIMIT) {
                 filteredList.add(point);
             }
         }
         return  filteredList;
     }
 
-    private static ArrayList<Point3F> convertToPointList(ArrayList<float[]> floatArray) {
-        ArrayList<Point3F> pointList = new ArrayList<>();
-        if (floatArray == null) return pointList;
-        for (int i = 0; i < floatArray.size(); i++) {
-            pointList.add(
-                    new Point3F(
-                            floatArray.get(i)[0],
-                            floatArray.get(i)[1],
-                            floatArray.get(i)[2],
-                            floatArray.get(i)[3]
-                    )
-            );
-        }
-        return pointList;
-    }
 
     private static ArrayList<Point3F> convertToPointList(FloatBuffer floatBuffer) {
         ArrayList<Point3F> pointList = new ArrayList<>();
@@ -143,5 +131,9 @@ public class PointFilter {
             );
         }
         return pointList;
+    }
+
+    public static float getPointConfidenceMin() {
+        return POINT_CONFIDENCE_MIN;
     }
 }
