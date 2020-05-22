@@ -14,7 +14,7 @@ import java.util.List;
 
 
 public class PointFilter {
-    private static final float POINT_CONFIDENCE_MIN = 0.5f;
+    private static final float POINT_CONFIDENCE_MIN = 0.7f;
 
     private static final float GROUND_THRESH_LIMIT = 0.05f;
     private static final float REGION_LIMITS = 0.5f;

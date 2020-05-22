@@ -33,7 +33,6 @@ import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
-import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
@@ -43,21 +42,8 @@ import com.reactlibrary.Object.ObjectCodes;
 import com.reactlibrary.ColourChange.ColourChangeHandler;
 import com.reactlibrary.SizeCheck.SizeCheckHandler;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 import java.util.Objects;
-import java.util.prefs.Preferences;
 
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -90,6 +76,7 @@ public class ARActivity extends AppCompatActivity {
 
     //local coordinates of placed object anchor
     private RadioGroup radioGroup;
+    private TextView debugTextView;
     private AnchorNode anchorNode;
     PointCloudVisualiser pcVis;
 
@@ -111,6 +98,7 @@ public class ARActivity extends AppCompatActivity {
         radioGroup = findViewById(R.id.change_type);
         onScreenText = findViewById(R.id.onScreenText);
         removeObjects = findViewById(R.id.removeObjects);
+        debugTextView = findViewById(R.id.debugTextView);
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
@@ -234,16 +222,6 @@ public class ARActivity extends AppCompatActivity {
         anchorNode.setParent(arFragment.getArSceneView().getScene());
     }
 
-    private void initFragment() {
-        try {
-            arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-            //TODO
-            //scene = arFragment.getArSceneView().getScene();
-            //arFragment.getTransformationSystem().setSelectionVisualizer(new CustomVisualizer());
-        } catch (NullPointerException n){
-            Log.wtf("arFragment", n.getMessage());
-        }
-    }
 
     private void initSession() {
         try {
@@ -278,6 +256,7 @@ public class ARActivity extends AppCompatActivity {
 
         Log.d("SizeCheckHandler","readyToMeasure");
         FitCodes fitCode = sizeHandler.checkIfFits();
+        debugTextView.setText(sizeHandler.getBoxDim().toString());
         if (fitCode != null && fitCode != FitCodes.NONE) {
             colourChangeHandler.setObject(fitCode);
         }
@@ -394,7 +373,7 @@ public class ARActivity extends AppCompatActivity {
         }
     }
 
-    public class CustomVisualizer implements SelectionVisualizer {
+    public static class CustomVisualizer implements SelectionVisualizer {
         @Override
         public void applySelectionVisual(BaseTransformableNode node) {}
         @Override
@@ -417,39 +396,6 @@ public class ARActivity extends AppCompatActivity {
                 }
             }
         }
-    }
-    //TODO remove
-    private void saveCloud(PointCloud pointCloud, int i, Vector3 anchorPosition) {
-        String fileName = "cloud" + i;
-        File root = android.os.Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
-        File dir = new File(root.getAbsolutePath());
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        Log.d(TAG,"saveCloud()");
-        int m = 0, n = 0;
-
-        try {
-            File file = new File(root + "/" + fileName+".txt");
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            PrintWriter pw = new PrintWriter(fileOutputStream);
-
-            FloatBuffer points = pointCloud.getPoints();
-            IntBuffer ids = pointCloud.getIds();
-            Log.d("REM",points.remaining() + " " + ids.remaining());
-            while (points.hasRemaining()) {
-                String p = points.get() + " " + points.get() + " " + points.get() + " " + points.get() + " " + ids.get() + " " + anchorPosition.x + " " + anchorPosition.y + " " + anchorPosition.z;
-                pw.println(p);
-            }
-            pw.flush();
-            pw.close();
-            fileOutputStream.close();
-
-        } catch (Exception e) {
-            Log.e(TAG,"FileWriter() " + e.getLocalizedMessage());
-             e.printStackTrace();
-        }
-
     }
 
     @Override
