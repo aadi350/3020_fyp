@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#FFFFFF"
     tools:context=".ARActivity">
 
-    <fragment android:name="com.google.ar.sceneform.ux.ArFragment"
+
+    <fragment
         android:id="@+id/ux_fragment"
+        android:name="com.google.ar.sceneform.ux.ArFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent">
 
         <TextView
             android:id="@+id/onScreenText"
@@ -19,24 +22,47 @@
             android:layout_marginStart="12dip"
             android:layout_marginTop="60dip"
             android:layout_marginEnd="12dip"
-            android:background="@drawable/roundcorner_white"
+            android:background="#FFFFFF"
             android:gravity="center"
+            android:drawablePadding="5dp"
             android:paddingHorizontal="8dip"
             android:paddingVertical="20dip"
-            android:text="@string/promptText"
             android:textAlignment="center"
-            android:textColor="#B4B4B4"
-            android:textSize="16sp" />
+            android:textColor="#000000"
+            android:textSize="16sp"
+            tools:visibility="visible">
+
+        </TextView>
+
+        <View
+            android:id="@+id/tapToPlace"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_gravity="center"
+            android:background="@drawable/tap_screen"
+            android:contentDescription="tap"
+            app:srcCompat="@drawable/tap_screen"
+            tools:visibility="visible" />
+
+        <View
+            android:id="@+id/scanObject"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_gravity="center"
+            android:background="@drawable/scan_object"
+            android:contentDescription="obj"
+            app:srcCompat="@drawable/scan_object"
+            tools:visibility="visible" />
 
         <ImageButton
             android:id="@+id/removeObjects"
             android:layout_width="50dip"
             android:layout_height="50dip"
+            android:layout_gravity="right|top"
             android:layout_marginTop="7dip"
             android:layout_marginEnd="7dip"
-            android:layout_gravity="right|top"
-            android:backgroundTint="#C70039"
             android:background="@drawable/roundcorner"
+            android:backgroundTint="#C70039"
             android:padding="12dip"
             app:srcCompat="@drawable/baseline_delete_24" />
 
@@ -44,12 +70,32 @@
     </fragment>
 
 
+    <TextView
+        android:id="@+id/debugTextView"
+        android:layout_width="150dp"
+        android:layout_height="200dp"
+        android:layout_gravity="start|center"
+        android:background="#4D000000"
+        android:lines="4"
+        android:text="TextView"
+        android:textColor="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <View
+        android:id="@+id/view"
+        android:layout_width="wrap_content"
+        android:layout_height="76dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:foreground="@android:color/background_light" />
+
     <RadioGroup
         android:id="@+id/change_type"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="20dip"
+        android:layout_marginBottom="10dip"
+        android:gravity="center|center_horizontal|center_vertical"
         android:orientation="horizontal"
         android:padding="12dip">
 
@@ -61,7 +107,7 @@
             android:buttonTint="#7D3B84"
             android:checked="true"
             android:text="@string/personal_item"
-            android:textColor="#FFFFFF" />
+            android:textColor="#000000" />
 
         <RadioButton
             android:id="@+id/radio_carryon"
@@ -73,7 +119,7 @@
             android:checked="true"
             android:gravity="center"
             android:text="@string/carry_on"
-            android:textColor="#FFFFFF" />
+            android:textColor="#000000" />
 
         <RadioButton
             android:id="@+id/radio_duffel"
@@ -85,17 +131,8 @@
             android:checked="false"
             android:gravity="center"
             android:text="@string/duffel"
-            android:textColor="#FFFFFF" />
+            android:textColor="#000000" />
 
     </RadioGroup>
 
-    <TextView
-        android:id="@+id/debugTextView"
-        android:background="#4D000000"
-        android:layout_width="150dp"
-        android:textColor="#FFFFFF"
-        android:layout_height="200dp"
-        android:lines="4"
-        android:layout_gravity="start|center"
-        android:text="TextView" />
 </FrameLayout>

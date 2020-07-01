@@ -11,10 +11,14 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -33,6 +37,7 @@ import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
+import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
@@ -44,9 +49,6 @@ import com.reactlibrary.SizeCheck.SizeCheckHandler;
 
 import java.io.File;
 import java.util.Objects;
-
-import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 
 public class ARActivity extends AppCompatActivity {
@@ -70,7 +72,6 @@ public class ARActivity extends AppCompatActivity {
     private Pose androidSensorPose;
     private long cTime = 0, pTime = 0;
 
-
     private SizeCheckHandler sizeHandler;
     private ObjectCodes currentModel;
 
@@ -80,16 +81,18 @@ public class ARActivity extends AppCompatActivity {
     private AnchorNode anchorNode;
     PointCloudVisualiser pcVis;
 
+    private View tapToPlace;
+    private View scanObject;
+
     public final int AR_LAYOUT = R.layout.ar_layout;
     private Session session;
     private Config config;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //RN Bridge
+        //receives intent to launch from RN Bridge
         Intent intent = getIntent();
         super.onCreate(savedInstanceState);
-        requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE}, 1);
         setContentView(AR_LAYOUT);
         sizeHandler = new SizeCheckHandler();
         sizeHandler.setObject(ObjectCodes.CARRYON);
@@ -100,35 +103,58 @@ public class ARActivity extends AppCompatActivity {
         removeObjects = findViewById(R.id.removeObjects);
         debugTextView = findViewById(R.id.debugTextView);
 
+        tapToPlace = findViewById(R.id.tapToPlace);
+        scanObject = findViewById(R.id.scanObject);
+
+        //On-screen text prompts
+        tapToPlace.setVisibility(View.INVISIBLE);
+        scanObject.setVisibility(View.INVISIBLE);
+
+        onScreenText.setText(R.string.promptText);
+
+        //Initialise Fragment and handler
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         colourChangeHandler = new ColourChangeHandler(this.getApplicationContext());
 
+
+        Config.LightEstimationMode lightEstimationMode =
+                Config.LightEstimationMode.AMBIENT_INTENSITY;
+
         arFragment.setOnTapArPlaneListener(
-            (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-                if(plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING) {
-                    return;
-                }
-                planePose = plane.getCenterPose();
+                (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
+                    if (plane.getType() != Plane.Type.HORIZONTAL_UPWARD_FACING) {
+                        return;
+                    }
 
-                measure();
-                disablePlaneDetection();
+                    fadeOut(onScreenText);
+                    onScreenText.setText(R.string.objectPlaced);
+                    fadeIn(onScreenText);
 
-                if (!objectPlaced) {
-                    initAnchor(hitResult);
-                    createNode(arFragment);
-                    colourChangeHandler.setAnchorNode(anchorNode);
-                    colourChangeHandler.setTransformableNode(node);
+                    planePose = plane.getCenterPose();
 
-                    setModel(radioGroup.getCheckedRadioButtonId());
-                    objectPlaced = true;
-                }
-            });
+                    measure();
+                    disablePlaneDetection();
 
-        //buttons
+                    if (!objectPlaced) {
+                        initAnchor(hitResult);
+                        createNode(arFragment);
+                        colourChangeHandler.setAnchorNode(anchorNode);
+                        colourChangeHandler.setTransformableNode(node);
+
+                        setModel(radioGroup.getCheckedRadioButtonId());
+                        objectPlaced = true;
+                    }
+
+
+                });
+
+        //Buttons for choosing type of object placed
         radioGroup.setOnCheckedChangeListener(
                 (group, checkedId) -> setModel(checkedId)
-            );
+        );
 
+
+        //Button for removing object placed
         removeObjects.setOnClickListener(
                 w -> {
                     if (objectPlaced) {
@@ -144,25 +170,14 @@ public class ARActivity extends AppCompatActivity {
         );
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        try{
-            Runtime.getRuntime().gc();
-            finish();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-
 
     private boolean scan = false;
+
     public void measure() {
         if (scan) {
             scan = false;
             return;
         }
-
 
         if (arFragment.getArSceneView().getArFrame() == null) {
             return;
@@ -177,13 +192,8 @@ public class ARActivity extends AppCompatActivity {
         pcVis = new PointCloudVisualiser(getApplicationContext());
         arFragment.getArSceneView().getScene().addChild(pcVis);
         // If there is no frame then don't process anything.
-
         arFragment.getArSceneView().getScene().addOnUpdateListener(this::onSceneUpdate);
-
     }
-
-
-
 
     private void removeAnchorNode(AnchorNode nodeToremove) throws NullPointerException {
         //Remove an anchor node
@@ -197,7 +207,7 @@ public class ARActivity extends AppCompatActivity {
     private void createNode(ArFragment arFragment) throws NullPointerException {
         try {
             node = new TransformableNode(arFragment.getTransformationSystem());
-        } catch (Exception e){
+        } catch (Exception e) {
             Log.d(TAG, "objectHandler: " + e.getMessage());
         }
     }
@@ -209,8 +219,17 @@ public class ARActivity extends AppCompatActivity {
             arFragment.getPlaneDiscoveryController().hide();
             arFragment.getPlaneDiscoveryController().setInstructionView(null);
             arFragment.getArSceneView().getPlaneRenderer().setEnabled(false);
-        } catch (NullPointerException e){
-            Log.e("getSession",e.getMessage());
+        } catch (NullPointerException e) {
+            Log.e("getSession", e.getMessage());
+        }
+    }
+
+    private boolean hasTrackingPlane() {
+        try {
+            session.getAllTrackables(Plane.class);
+            return true;
+        } catch (NullPointerException e) {
+            return false;
         }
     }
 
@@ -221,7 +240,6 @@ public class ARActivity extends AppCompatActivity {
         //attach arFragment to hitResult via anchorNode
         anchorNode.setParent(arFragment.getArSceneView().getScene());
     }
-
 
     private void initSession() {
         try {
@@ -235,31 +253,51 @@ public class ARActivity extends AppCompatActivity {
     }
 
     private void onSceneUpdate(FrameTime frameTime) {
-        Log.d(TAG,"onSceneUpdate");
-        if (!scan) return;
-        setOnScreenText(arFragment);
-        Frame frame = arFragment.getArSceneView().getArFrame();
-        PointCloud pointCloud = frame.acquirePointCloud();
+        Log.d(TAG, "onSceneUpdate");
 
-//        saveCloud(pointCloud, i, anchorPosition);
-//        i++;
+        if (!scan) return;
+
+        Frame frame = arFragment.getArSceneView().getArFrame();
+
+        if (!objectPlaced) {
+            try {
+                frame.getUpdatedTrackables(Plane.class);
+                onScreenText.setText(R.string.detectText);
+                Log.d("LIGHT", frame.getLightEstimate().getEnvironmentalHdrMainLightIntensity().toString());
+            } catch (NullPointerException e) {
+                onScreenText.setText(R.string.promptText);
+                Log.e(TAG, e.getLocalizedMessage());
+            }
+        }
+
+        PointCloud pointCloud = frame.acquirePointCloud();
 
         androidSensorPose = frame.getAndroidSensorPose();
         sizeHandler.updateAnchor(node.getWorldPosition());
 
         pcVis.update(pointCloud);
-
         sizeHandler.loadPointCloud(pointCloud);
-
 
         if (!readyToMeasure()) return;
 
-        Log.d("SizeCheckHandler","readyToMeasure");
+        Log.d("SizeCheckHandler", "readyToMeasure");
+
         FitCodes fitCode = sizeHandler.checkIfFits();
         debugTextView.setText(sizeHandler.getBoxDim().toString());
         if (fitCode != null && fitCode != FitCodes.NONE) {
             colourChangeHandler.setObject(fitCode);
+
+            if (fitCode == FitCodes.FIT) {
+                onScreenText.setText(R.string.fits);
+                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_fits_large, 0, 0, 0);
+
+            }
+
+            if (fitCode == FitCodes.LARGE)
+                onScreenText.setText(R.string.large);
+                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_large_large, 0, 0, 0);
         }
+
         pointCloud.release();
     }
 
@@ -269,7 +307,7 @@ public class ARActivity extends AppCompatActivity {
         cTime = System.currentTimeMillis();
         if (cTime - pTime > TIME_3_SECONDS) {
             pTime = cTime;
-            Log.d(TAG,"(true)");
+            Log.d(TAG, "(true)");
             return true;
         }
         return false;
@@ -296,15 +334,30 @@ public class ARActivity extends AppCompatActivity {
         Log.d("setModel", "exit");
     }
 
-    private void removeAllModels(){
-        try{
+    private void removeAllModels() {
+        try {
             node.setRenderable(null);
-        } catch (Exception e){
+        } catch (Exception e) {
             Log.e("removeAllModels", e.getMessage());
         }
     }
 
-    //API Required Calls
+
+    //Slowly fades in a View
+    private void fadeIn(View view) {
+        view.setVisibility(View.VISIBLE);
+        Animation fadeIn = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fade_in);
+        view.startAnimation(fadeIn);
+    }
+
+    //Slowly fades out a View
+    private void fadeOut(View view) {
+        Animation fadeOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fade_out);
+        view.startAnimation(fadeOut);
+        view.setVisibility(View.INVISIBLE);
+    }
+
+    /*------------------------------------API Required Calls--------------------------------------*/
     public static boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             Log.e(TAG, "Sceneform requires Android N or later");
@@ -338,7 +391,7 @@ public class ARActivity extends AppCompatActivity {
             // This can happen if ARCore needs to be updated or permissions are not granted yet.
             try {
                 Config.LightEstimationMode lightEstimationMode =
-                        Config.LightEstimationMode.ENVIRONMENTAL_HDR;
+                        Config.LightEstimationMode.AMBIENT_INTENSITY;
                 Session session = new Session(this);
 
                 Config config = new Config(session);
@@ -352,85 +405,62 @@ public class ARActivity extends AppCompatActivity {
                     arSceneView.setupSession(session);
                 }
             } catch (UnavailableException e) {
-                Log.e(TAG,e.getMessage());
+                Log.e(TAG, e.getMessage());
             }
         }
 
         try {
             arSceneView.resume();
         } catch (CameraNotAvailableException ex) {
-            Log.e(TAG,"No Camera");
+            Log.e(TAG, "No Camera");
             finish();
         }
 
     }
 
+    /*------------------------------------LifeCycle Methods--------------------------------------*/
     @Override
     public void onPause() {
         super.onPause();
+        try {
+            Runtime.getRuntime().gc();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (arSceneView != null) {
             arSceneView.destroy();
         }
     }
 
-    public static class CustomVisualizer implements SelectionVisualizer {
-        @Override
-        public void applySelectionVisual(BaseTransformableNode node) {}
-        @Override
-        public void removeSelectionVisual(BaseTransformableNode node) {}
-    }
-
-
-
-    private void setOnScreenText(ArFragment arFragment) throws NullPointerException {
-        Frame frame = arFragment.getArSceneView().getArFrame();
-
-        if (frame != null) {
-            for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
-                if (plane != null || node.getRenderable() == null) {
-                    onScreenText.setText(R.string.planeDetected);
-                } if(node.getRenderable() != null) {
-                    onScreenText.setText(R.string.objectPlaced);
-                }else {
-                    onScreenText.setText(R.string.planeNotDetected);
-                }
-            }
+    @Override
+    public void onStop() {
+        super.onStop();
+        try {
+            finish();
+            Runtime.getRuntime().gc();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        switch (requestCode) {
-            case 112: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "The app was allowed to write to your storage!", Toast.LENGTH_LONG).show();
-                    // Reload the activity with permission granted or use the features what required the permission
-                } else {
-                    Toast.makeText(this, "The app was not allowed to write to your storage. Hence, it cannot function properly. Please consider granting it this permission", Toast.LENGTH_LONG).show();
-                }
-            }
+    public void onDestroy() {
+        super.onDestroy();
+        try {
+            finish();
+            Runtime.getRuntime().gc();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
+    public static class CustomVisualizer implements SelectionVisualizer {
+        @Override
+        public void applySelectionVisual(BaseTransformableNode node) {
+        }
 
-    private void requestPermission(Activity context) {
-        boolean hasPermission = (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
-        if (!hasPermission) {
-            ActivityCompat.requestPermissions(context,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    112);
-        } else {
-            // You are allowed to write external storage:
-            String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/new_folder";
-            File storageDir = new File(path);
-            if (!storageDir.exists() && !storageDir.mkdirs()) {
-                // This should never happen - log handled exception!
-            }
+        @Override
+        public void removeSelectionVisual(BaseTransformableNode node) {
         }
     }
 }
-
-
-

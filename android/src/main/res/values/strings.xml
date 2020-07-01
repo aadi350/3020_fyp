@@ -1,11 +1,17 @@
 <resources>
     <string name="app_name">ARBaggageMeasure</string>
+
     <string name="promptText">Point your device at place on the floor with good lighting and without objects that may get in the way</string>
     <string name="detectText">We have detected a suitable area. Touch the screen to place the suitcase</string>
+    <string name="objectPlaced">Point your device at your bag and walk around to scan</string>
+
+    <string name="fits">Your object may qualify as carry-on</string>
+    <string name="large">Your object may not qualify as carry-on</string>
+
     <string name="personal_item">Personal Item</string>
     <string name="carry_on">Carry-On</string>
     <string name="duffel">Duffel</string>
-    <string name="objectPlaced"><b>Place your baggage</b> inside the virtual box to compare their sizes. You can move the box with one finger, and rotate with two</string>
+
     <string name="planeDetected"><b>Tap</b> to place your virtual object</string>
     <string name="planeNotDetected">Point your device at place on the floor with good lighting and without objects that may get in the way</string>
 </resources>
