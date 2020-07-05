@@ -289,13 +289,14 @@ public class ARActivity extends AppCompatActivity {
 
             if (fitCode == FitCodes.FIT) {
                 onScreenText.setText(R.string.fits);
-                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_fits_large, 0, 0, 0);
+                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_fits, 0, 0, 0);
 
-            }
-
-            if (fitCode == FitCodes.LARGE)
+            } else if (fitCode == FitCodes.LARGE) {
                 onScreenText.setText(R.string.large);
-                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_large_large, 0, 0, 0);
+                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_large, 0, 0, 0);
+            } else {
+                onScreenText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            }
         }
 
         pointCloud.release();
