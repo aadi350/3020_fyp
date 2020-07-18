@@ -14,8 +14,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/onScreenText"
+        <ViewFlipper
+            android:id="@+id/viewFlipper"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center|top"
@@ -23,16 +23,82 @@
             android:layout_marginTop="60dip"
             android:layout_marginEnd="12dip"
             android:background="#FFFFFF"
-            android:gravity="center"
             android:drawablePadding="5dp"
+            android:gravity="center"
             android:paddingHorizontal="8dip"
-            android:paddingVertical="20dip"
+            android:paddingVertical="8dip"
             android:textAlignment="center"
             android:textColor="#000000"
             android:textSize="16sp"
             tools:visibility="visible">
 
-        </TextView>
+            <TextView
+                android:id="@+id/prompt_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:background="#FFFFFF"
+                android:gravity="center"
+                android:text="@string/promptText"
+                android:textAlignment="center"
+                android:textColor="#000000"
+                android:textSize="16sp" />
+
+            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/large_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|center_horizontal"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="0dp"
+            android:background="#FFFFFF"
+            android:drawableStart="@drawable/icon_large"
+            android:drawablePadding="5dp"
+            android:gravity="center"
+            android:paddingHorizontal="8dip"
+            android:paddingVertical="5dp"
+            android:text="@string/large"
+            android:textAlignment="center"
+            android:textColor="#000000"
+            android:textSize="16sp" />
+
+            <TextView  android:id="@+id/object_placed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:background="#FFFFFF"
+                android:gravity="center"
+                android:text="@string/objectPlaced"
+                android:textAlignment="center"
+                android:textColor="#000000"
+                android:textSize="16sp"  />
+
+            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/fits_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center|center_horizontal"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:background="#FFFFFF"
+                android:drawableStart="@drawable/icon_fits"
+                android:drawablePadding="5dp"
+                android:gravity="center"
+                android:paddingHorizontal="8dip"
+                android:paddingVertical="5dp"
+                android:text="@string/fits"
+                android:textAlignment="center"
+                android:textColor="#000000"
+                android:textSize="16sp" />
+        </ViewFlipper>
 
         <View
             android:id="@+id/tapToPlace"

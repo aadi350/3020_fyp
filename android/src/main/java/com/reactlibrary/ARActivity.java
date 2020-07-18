@@ -1,14 +1,11 @@
 package com.reactlibrary;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,11 +15,10 @@ import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Config;
@@ -37,7 +33,6 @@ import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
-import com.google.ar.sceneform.rendering.PlaneRenderer;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseTransformableNode;
 import com.google.ar.sceneform.ux.SelectionVisualizer;
@@ -46,8 +41,6 @@ import com.google.ar.sceneform.ux.TransformableNode;
 import com.reactlibrary.Object.ObjectCodes;
 import com.reactlibrary.ColourChange.ColourChangeHandler;
 import com.reactlibrary.SizeCheck.SizeCheckHandler;
-
-import java.io.File;
 import java.util.Objects;
 
 
@@ -61,7 +54,6 @@ public class ARActivity extends AppCompatActivity {
 
     private ArFragment arFragment;
     private ImageButton removeObjects;
-    private TextView onScreenText;
     private ArSceneView arSceneView;
     private boolean cameraPermissionRequested;
     boolean objectPlaced = false;
@@ -78,6 +70,7 @@ public class ARActivity extends AppCompatActivity {
     //local coordinates of placed object anchor
     private RadioGroup radioGroup;
     private TextView debugTextView;
+    private ViewFlipper viewFlipper;
     private AnchorNode anchorNode;
     PointCloudVisualiser pcVis;
 
@@ -88,18 +81,29 @@ public class ARActivity extends AppCompatActivity {
     private Session session;
     private Config config;
 
+    private Animation in, out;
+
+    //ViewFlipper IDs
+    final int PROMPT_TEXT = R.id.prompt_text;
+    final int OBJECT_PLACED = R.id.object_placed;
+    final int FITS_TEXT = R.id.fits_text;
+    final int LARGE_TEXT = R.id.large_text;
+
+    int PROMPT_ID, OBJECT_PLACED_ID, FITS_ID, LARGE_ID;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //receives intent to launch from RN Bridge
         Intent intent = getIntent();
         super.onCreate(savedInstanceState);
         setContentView(AR_LAYOUT);
+
         sizeHandler = new SizeCheckHandler();
         sizeHandler.setObject(ObjectCodes.CARRYON);
 
         //connecting views
+        viewFlipper = findViewById(R.id.viewFlipper);
         radioGroup = findViewById(R.id.change_type);
-        onScreenText = findViewById(R.id.onScreenText);
         removeObjects = findViewById(R.id.removeObjects);
         debugTextView = findViewById(R.id.debugTextView);
 
@@ -110,7 +114,19 @@ public class ARActivity extends AppCompatActivity {
         tapToPlace.setVisibility(View.INVISIBLE);
         scanObject.setVisibility(View.INVISIBLE);
 
-        onScreenText.setText(R.string.promptText);
+        //ViewFlipper animation
+        in = AnimationUtils.loadAnimation(this, R.anim.slide_in_up);
+        out = AnimationUtils.loadAnimation(this, R.anim.slide_out_up);
+        viewFlipper.setInAnimation(in);
+        viewFlipper.setOutAnimation(out);
+
+        PROMPT_ID = viewFlipper.indexOfChild(findViewById(PROMPT_TEXT));
+        OBJECT_PLACED_ID = viewFlipper.indexOfChild(findViewById(OBJECT_PLACED));
+        FITS_ID = viewFlipper.indexOfChild(findViewById(FITS_TEXT));
+        LARGE_ID = viewFlipper.indexOfChild(findViewById(LARGE_TEXT));
+
+
+        viewFlipper.setDisplayedChild(PROMPT_ID);
 
         //Initialise Fragment and handler
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
@@ -126,9 +142,7 @@ public class ARActivity extends AppCompatActivity {
                         return;
                     }
 
-                    fadeOut(onScreenText);
-                    onScreenText.setText(R.string.objectPlaced);
-                    fadeIn(onScreenText);
+                    viewFlipper.setDisplayedChild(OBJECT_PLACED_ID);
 
                     planePose = plane.getCenterPose();
 
@@ -262,10 +276,9 @@ public class ARActivity extends AppCompatActivity {
         if (!objectPlaced) {
             try {
                 frame.getUpdatedTrackables(Plane.class);
-                onScreenText.setText(R.string.detectText);
                 Log.d("LIGHT", frame.getLightEstimate().getEnvironmentalHdrMainLightIntensity().toString());
             } catch (NullPointerException e) {
-                onScreenText.setText(R.string.promptText);
+                viewFlipper.setDisplayedChild(PROMPT_ID);
                 Log.e(TAG, e.getLocalizedMessage());
             }
         }
@@ -284,19 +297,17 @@ public class ARActivity extends AppCompatActivity {
 
         FitCodes fitCode = sizeHandler.checkIfFits();
         debugTextView.setText(sizeHandler.getBoxDim().toString());
+
+
         if (fitCode != null && fitCode != FitCodes.NONE) {
             colourChangeHandler.setObject(fitCode);
 
             if (fitCode == FitCodes.FIT) {
-                onScreenText.setText(R.string.fits);
-                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_fits, 0, 0, 0);
-
+                viewFlipper.setDisplayedChild(FITS_ID);
             } else if (fitCode == FitCodes.LARGE) {
-                onScreenText.setText(R.string.large);
-                onScreenText.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_large, 0, 0, 0);
-            } else {
-                onScreenText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                viewFlipper.setDisplayedChild(LARGE_ID);
             }
+
         }
 
         pointCloud.release();
@@ -341,21 +352,6 @@ public class ARActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e("removeAllModels", e.getMessage());
         }
-    }
-
-
-    //Slowly fades in a View
-    private void fadeIn(View view) {
-        view.setVisibility(View.VISIBLE);
-        Animation fadeIn = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fade_in);
-        view.startAnimation(fadeIn);
-    }
-
-    //Slowly fades out a View
-    private void fadeOut(View view) {
-        Animation fadeOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fade_out);
-        view.startAnimation(fadeOut);
-        view.setVisibility(View.INVISIBLE);
     }
 
     /*------------------------------------API Required Calls--------------------------------------*/
